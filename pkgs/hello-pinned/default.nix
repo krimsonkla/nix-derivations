@@ -5,12 +5,12 @@
 }:
 stdenvNoCC.mkDerivation {
   pname = "hello-pinned";
-  version = "0-unstable-7fd1a60";
+  version = "0-unstable-553c207";
   src = fetchFromGitHub {
     owner = "octocat";
     repo = "Hello-World";
-    rev = "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d";
-    hash = "sha256-gdkPz7VJ8ZOwJ5oetnuXBXPkkHlOsU7w0PghYjWgpAo=";
+    rev = "553c2077f0edc3d5dc5d17262f6aa498e69d6f8e";
+    hash = "sha256-MX8NoLcpWg4XRjR8LZp/bTZ2Pjg2FMnIrr+jipdDXB8=";
   };
   dontBuild = true;
   installPhase = ''
