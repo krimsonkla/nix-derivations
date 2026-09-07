@@ -18,8 +18,8 @@ jobs:
         with:
           extra_nix_config: |
             sandbox = true
-            substituters = https://cache.nixos.org https://krimsonkla.cachix.org
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=
+            substituters = https://cache.nixos.org https://krimsonkla-nixpkgs.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk=
       - run: nix config show | grep -E '^sandbox = true$'
       - run: nix flake check -L
   registry-diff:

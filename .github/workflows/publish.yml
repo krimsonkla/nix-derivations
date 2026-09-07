@@ -6,6 +6,11 @@ permissions:
   contents: read
 jobs:
   build:
+    # The write token is an ENVIRONMENT secret, and the environment's
+    # deployment-branch policy admits only the default branch. That, not the
+    # `on: push: branches` filter, is what keeps a feature branch or a fork
+    # from ever holding the token.
+    environment: cachix-push
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -17,7 +22,7 @@ jobs:
           extra_nix_config: sandbox = true
       - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
         with:
-          name: krimsonkla
+          name: krimsonkla-nixpkgs
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - name: Build every package
         run: |
@@ -36,8 +41,8 @@ jobs:
       - uses: cachix/install-nix-action@a49548c11d9846ad46ecc0115273879b045f001c # v31.10.7
         with:
           extra_nix_config: |
-            substituters = https://krimsonkla.cachix.org https://cache.nixos.org
-            trusted-public-keys = krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            substituters = https://krimsonkla-nixpkgs.cachix.org https://cache.nixos.org
+            trusted-public-keys = krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Assert the restricted settings took effect
         # Presence checks rather than byte-exact lines: the installer may
         # append to Nix's defaults, so order and duplicates vary. The last
@@ -47,9 +52,9 @@ jobs:
           subs=$(nix config show | sed -nE 's/^substituters = //p')
           keys=$(nix config show | sed -nE 's/^trusted-public-keys = //p')
           echo "substituters: $subs"; echo "trusted-public-keys: $keys"
-          grep -qF 'https://krimsonkla.cachix.org' <<<"$subs"
-          grep -qF 'krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=' <<<"$keys"
-          ! tr ' ' '\n' <<<"$subs" | grep -vE '^(https://krimsonkla\.cachix\.org/?|https://cache\.nixos\.org/?)$' | grep -q .
+          grep -qF 'https://krimsonkla-nixpkgs.cachix.org' <<<"$subs"
+          grep -qF 'krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk=' <<<"$keys"
+          ! tr ' ' '\n' <<<"$subs" | grep -vE '^(https://krimsonkla-nixpkgs\.cachix\.org/?|https://cache\.nixos\.org/?)$' | grep -q .
       - name: Substitute every package with local builds forbidden
         # devenv-nixpkgs applies its patches at evaluation time, which is a
         # build Nix must be allowed to do. So the attribute list is evaluated
@@ -60,5 +65,10 @@ jobs:
           system=$(nix eval --raw --impure --expr builtins.currentSystem)
           attrs=$(nix eval --raw ".#packages.$system" --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
           echo "packages: $attrs"
+          # Force full instantiation now: attribute names alone are answered
+          # lazily without importing nixpkgs, so the patch derivation would
+          # otherwise be realised inside the --max-jobs 0 build and fail it.
+          nix eval --raw ".#packages.$system" --apply 'ps: builtins.concatStringsSep "\n" (map (n: ps.${n}.drvPath) (builtins.attrNames ps))'
+          echo
           # shellcheck disable=SC2086
           nix build --max-jobs 0 --print-build-logs $attrs
