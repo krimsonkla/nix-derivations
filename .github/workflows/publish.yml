@@ -19,7 +19,12 @@ jobs:
         with:
           name: krimsonkla
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix build --print-build-logs $(nix eval --raw .#packages.$(nix eval --raw --impure --expr builtins.currentSystem) --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
+      - name: Build every package
+        run: |
+          system=$(nix eval --raw --impure --expr builtins.currentSystem)
+          attrs=$(nix eval --raw ".#packages.$system" --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
+          # shellcheck disable=SC2086
+          nix build --print-build-logs $attrs
   substitute-only:
     needs: build
     strategy:
@@ -47,4 +52,9 @@ jobs:
           grep -qF 'krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=' <<<"$keys"
           ! tr ' ' '\n' <<<"$subs" | grep -vE '^(https://krimsonkla\.cachix\.org/?|https://cache\.nixos\.org/?)$' | grep -q .
           nix config show | grep -qE '^max-jobs = 0$'
-      - run: nix build --print-build-logs $(nix eval --raw .#packages.$(nix eval --raw --impure --expr builtins.currentSystem) --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
+      - name: Build every package
+        run: |
+          system=$(nix eval --raw --impure --expr builtins.currentSystem)
+          attrs=$(nix eval --raw ".#packages.$system" --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
+          # shellcheck disable=SC2086
+          nix build --print-build-logs $attrs
