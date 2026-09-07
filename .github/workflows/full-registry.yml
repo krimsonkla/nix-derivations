@@ -1,0 +1,20 @@
+name: full-registry
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [pkgs/**, tests/**]
+permissions:
+  contents: read
+jobs:
+  rebuild-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: cachix/install-nix-action@a49548c11d9846ad46ecc0115273879b045f001c # v31.10.7
+        with:
+          extra_nix_config: sandbox = true
+      # The all-zero base forces mode=all, so this lane reuses the same script.
+      - run: nix develop -c bash scripts/registry-diff.sh 0000000000000000000000000000000000000000 ${{ github.sha }}
