@@ -6,6 +6,11 @@ permissions:
   contents: read
 jobs:
   build:
+    # The write token is an ENVIRONMENT secret, and the environment's
+    # deployment-branch policy admits only the default branch. That, not the
+    # `on: push: branches` filter, is what keeps a feature branch or a fork
+    # from ever holding the token.
+    environment: cachix-push
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
