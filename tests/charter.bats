@@ -1,0 +1,39 @@
+#!/usr/bin/env bats
+# Charter guard: the README, CONTRIBUTING and LICENSE text carries acceptance
+# criteria of its own (visibility decision, conventions, license scope), so it
+# is verified rather than assumed. Counts are printed and pinned per the
+# enumeration convention.
+
+setup() {
+  ROOT="$(git rev-parse --show-toplevel)"
+}
+
+@test "charter: README carries every required section" {
+  for h in "## What this is" "## Consuming" "## Why public" "## Adding a package" "## CI" "## Residual risks"; do
+    grep -qxF "$h" "$ROOT/README.md" || {
+      echo "README missing '$h'"
+      return 1
+    }
+  done
+  grep -qF "krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=" "$ROOT/README.md"
+  grep -qF "reopens" "$ROOT/README.md"
+}
+
+@test "charter: README residual-risks section has six bullets" {
+  n=$(awk '/^## Residual risks/{f=1;next} /^## /{f=0} f && /^- /{c++} END{print c+0}' "$ROOT/README.md")
+  echo "charter: $n residual bullets"
+  [ "$n" -eq 6 ]
+}
+
+@test "charter: CONTRIBUTING lists the nine conventions and the enforcement map" {
+  # Count numbered items only inside the Conventions section; the Bumping
+  # section is numbered too and must not inflate this.
+  n=$(awk '/^## Conventions/{f=1;next} /^## /{f=0} f && /^[1-9]\. /{c++} END{print c+0}' "$ROOT/CONTRIBUTING.md")
+  echo "charter: $n conventions"
+  [ "$n" -eq 9 ]
+  grep -qF "written-only" "$ROOT/CONTRIBUTING.md"
+}
+
+@test "charter: LICENSE scopes MIT to packaging expressions" {
+  grep -qF "packaging expressions in this repository only" "$ROOT/LICENSE"
+}
