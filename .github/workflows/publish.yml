@@ -1,0 +1,50 @@
+name: publish
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: cachix/install-nix-action@a49548c11d9846ad46ecc0115273879b045f001c # v31.10.7
+        with:
+          extra_nix_config: sandbox = true
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: krimsonkla
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - run: nix build --print-build-logs $(nix eval --raw .#packages.$(nix eval --raw --impure --expr builtins.currentSystem) --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
+  substitute-only:
+    needs: build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: cachix/install-nix-action@a49548c11d9846ad46ecc0115273879b045f001c # v31.10.7
+        with:
+          extra_nix_config: |
+            substituters = https://krimsonkla.cachix.org https://cache.nixos.org
+            trusted-public-keys = krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            max-jobs = 0
+      - name: Assert the restricted settings took effect
+        # Presence checks rather than byte-exact lines: the installer may
+        # append to Nix's defaults, so order and duplicates vary. The last
+        # check is the load-bearing one: no substituter other than the two
+        # allowed hosts may be present, or the proof is weaker than claimed.
+        run: |
+          subs=$(nix config show | sed -nE 's/^substituters = //p')
+          keys=$(nix config show | sed -nE 's/^trusted-public-keys = //p')
+          echo "substituters: $subs"; echo "trusted-public-keys: $keys"
+          grep -qF 'https://krimsonkla.cachix.org' <<<"$subs"
+          grep -qF 'krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=' <<<"$keys"
+          ! tr ' ' '\n' <<<"$subs" | grep -vE '^(https://krimsonkla\.cachix\.org/?|https://cache\.nixos\.org/?)$' | grep -q .
+          nix config show | grep -qE '^max-jobs = 0$'
+      - run: nix build --print-build-logs $(nix eval --raw .#packages.$(nix eval --raw --impure --expr builtins.currentSystem) --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
