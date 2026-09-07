@@ -1,0 +1,3 @@
+# One row per hash-bearing attribute under pkgs/. Whitespace separated.
+# pkg            attr        kind      source
+hello-pinned     hash        fetch     fetchFromGitHub

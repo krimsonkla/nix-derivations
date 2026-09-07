@@ -54,6 +54,7 @@
       v.packages
       // {
         package-list = guard "package-list";
+        hash-registry = guard "hash-registry";
         charter = guard "charter";
       });
 

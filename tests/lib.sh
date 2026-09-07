@@ -33,7 +33,9 @@ list_declared_packages() {
 enumerate_hash_attrs() {
   local root
   root=$(repo_root)
-  git -C "$root" grep -nE '^[^#]*\b(hash|sha256|outputHash|npmDepsHash|vendorHash|cargoHash)[[:space:]]*=' -- 'pkgs/*/*.nix' 'pkgs/*/**/*.nix' \
+  # No `\b`: git grep's ERE does not support it and silently matches nothing,
+  # which is the empty-enumeration failure this guard exists to catch.
+  git -C "$root" grep -nE '^[^#]*(^|[^A-Za-z_])(hash|sha256|outputHash|npmDepsHash|vendorHash|cargoHash)[[:space:]]*=' -- 'pkgs/*/*.nix' 'pkgs/*/**/*.nix' \
     | sed -E 's#^pkgs/([^/]+)/[^:]*:[0-9]+:[[:space:]]*([A-Za-z]+)[[:space:]]*=.*#\1 \2#' | sort -u
 }
 
@@ -41,6 +43,6 @@ enumerate_hash_attrs() {
 enumerate_revs() {
   local root
   root=$(repo_root)
-  git -C "$root" grep -hoE '^[^#]*\brev[[:space:]]*=[[:space:]]*"[^"]*"' -- 'pkgs/*/*.nix' \
+  git -C "$root" grep -hoE '(^|[^A-Za-z_])rev[[:space:]]*=[[:space:]]*"[^"]*"' -- 'pkgs/*/*.nix' \
     | sed -E 's#.*rev[[:space:]]*=[[:space:]]*"([^"]*)"#\1#' | sort -u
 }
