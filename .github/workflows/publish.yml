@@ -17,7 +17,7 @@ jobs:
           extra_nix_config: sandbox = true
       - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
         with:
-          name: krimsonkla
+          name: krimsonkla-nixpkgs
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - name: Build every package
         run: |
@@ -36,8 +36,8 @@ jobs:
       - uses: cachix/install-nix-action@a49548c11d9846ad46ecc0115273879b045f001c # v31.10.7
         with:
           extra_nix_config: |
-            substituters = https://krimsonkla.cachix.org https://cache.nixos.org
-            trusted-public-keys = krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            substituters = https://krimsonkla-nixpkgs.cachix.org https://cache.nixos.org
+            trusted-public-keys = krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Assert the restricted settings took effect
         # Presence checks rather than byte-exact lines: the installer may
         # append to Nix's defaults, so order and duplicates vary. The last
@@ -47,9 +47,9 @@ jobs:
           subs=$(nix config show | sed -nE 's/^substituters = //p')
           keys=$(nix config show | sed -nE 's/^trusted-public-keys = //p')
           echo "substituters: $subs"; echo "trusted-public-keys: $keys"
-          grep -qF 'https://krimsonkla.cachix.org' <<<"$subs"
-          grep -qF 'krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=' <<<"$keys"
-          ! tr ' ' '\n' <<<"$subs" | grep -vE '^(https://krimsonkla\.cachix\.org/?|https://cache\.nixos\.org/?)$' | grep -q .
+          grep -qF 'https://krimsonkla-nixpkgs.cachix.org' <<<"$subs"
+          grep -qF 'krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk=' <<<"$keys"
+          ! tr ' ' '\n' <<<"$subs" | grep -vE '^(https://krimsonkla-nixpkgs\.cachix\.org/?|https://cache\.nixos\.org/?)$' | grep -q .
       - name: Substitute every package with local builds forbidden
         # devenv-nixpkgs applies its patches at evaluation time, which is a
         # build Nix must be allowed to do. So the attribute list is evaluated
