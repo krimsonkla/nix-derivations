@@ -15,7 +15,7 @@ setup() {
       return 1
     }
   done
-  grep -qF "krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=" "$ROOT/README.md"
+  grep -qF "krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk=" "$ROOT/README.md"
   grep -qF "reopens" "$ROOT/README.md"
 }
 

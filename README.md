@@ -32,13 +32,25 @@ failure.
 Built outputs are pushed to a public binary cache after every merge:
 
 ```
-substituters = https://krimsonkla.cachix.org
-trusted-public-keys = krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=
+substituters = https://krimsonkla-nixpkgs.cachix.org
+trusted-public-keys = krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk=
 ```
 
 No token is needed to substitute. The `publish` workflow proves this on every
 merge by building every package on a fresh runner with no credentials and local
 builds forbidden.
+
+### Who can write to the cache
+
+The cache `krimsonkla-nixpkgs` exists for this repository alone. Its only
+writer is the `publish` workflow's `build` job, which runs in the GitHub
+Actions environment `cachix-push`. The write token lives in that environment
+as `CACHIX_AUTH_TOKEN`, never in the repository and never at repository scope,
+and the environment's deployment-branch policy admits only the default branch.
+So a workflow edited on a feature branch, or a fork PR, cannot obtain the token
+even if it names the environment: GitHub refuses the job before it starts.
+Rotation is: mint a new token in cachix, replace the environment secret, revoke
+the old one. Nothing in the repository changes.
 
 ## Why public
 
