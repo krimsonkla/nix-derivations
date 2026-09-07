@@ -51,9 +51,19 @@ main() {
   if [[ "$base" =~ ^0+$ ]] || ! git -C "$root" cat-file -e "${base}^{commit}" 2>/dev/null; then
     mode="all"
   else
-    changed_pkgs="$(git -C "$root" diff --name-only "$base" "$head" -- pkgs/ | sed -nE 's#^pkgs/([^/]+)/.*#\1#p' | sort -u || true)"
-    if git -C "$root" diff --name-only "$base" "$head" -- tests/hash-registry.txt | grep -q .; then
+    # A failing `git diff` must force mode=all, not yield an empty package
+    # list: an empty list would verify zero rows and go green on the exact
+    # error the fail-closed rule exists for. So the diff runs once, its exit
+    # status is checked, and only then is the output parsed.
+    local diff_out
+    if ! diff_out="$(git -C "$root" diff --name-only "$base" "$head" -- pkgs/ tests/hash-registry.txt)"; then
+      log_info "git diff failed; verifying every row"
       mode="all"
+    else
+      changed_pkgs="$(sed -nE 's#^pkgs/([^/]+)/.*#\1#p' <<<"$diff_out" | sort -u)"
+      if grep -qx 'tests/hash-registry.txt' <<<"$diff_out"; then
+        mode="all"
+      fi
     fi
   fi
   log_info "mode=$mode base=$base head=$head"

@@ -40,6 +40,11 @@ No token is needed to substitute. The `publish` workflow proves this on every
 merge by building every package on a fresh runner with no credentials and local
 builds forbidden.
 
+This cache is dedicated to this repository and is **in addition to** any cache
+a consumer already uses (devenv-layers' own binary-cache layer points at
+`krimsonkla`, not here). A consumer therefore adds a second substituter and
+public key; nothing here replaces the first.
+
 ### Who can write to the cache
 
 The cache `krimsonkla-nixpkgs` exists for this repository alone. Its only
