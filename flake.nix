@@ -86,7 +86,17 @@
             bats-guards = {
               enable = true;
               name = "bats guards";
-              entry = "bats tests/";
+              # The guards need a git worktree and nix. Inside the pre-commit
+              # check derivation the source is a plain copy, so the hook skips
+              # there with a message; the same guards run as their own check
+              # derivations under `checks`, which is where CI enforces them.
+              entry = "${pkgs.writeShellScript "bats-guards" ''
+                if ! git rev-parse --show-toplevel >/dev/null 2>&1 || ! command -v nix >/dev/null 2>&1; then
+                  echo "bats guards: skipped outside a git worktree with nix (enforced as flake checks)"
+                  exit 0
+                fi
+                exec ${pkgs.bats}/bin/bats tests/
+              ''}";
               language = "system";
               pass_filenames = false;
               files = "^(pkgs/|tests/|README\\.md|CONTRIBUTING\\.md|LICENSE)";
