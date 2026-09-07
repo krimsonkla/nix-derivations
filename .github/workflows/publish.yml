@@ -38,7 +38,6 @@ jobs:
           extra_nix_config: |
             substituters = https://krimsonkla.cachix.org https://cache.nixos.org
             trusted-public-keys = krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            max-jobs = 0
       - name: Assert the restricted settings took effect
         # Presence checks rather than byte-exact lines: the installer may
         # append to Nix's defaults, so order and duplicates vary. The last
@@ -51,10 +50,15 @@ jobs:
           grep -qF 'https://krimsonkla.cachix.org' <<<"$subs"
           grep -qF 'krimsonkla.cachix.org-1:4xiM435y1YDSbAcPNMyH1x1m2d16ycEnNMDBcOlIMpM=' <<<"$keys"
           ! tr ' ' '\n' <<<"$subs" | grep -vE '^(https://krimsonkla\.cachix\.org/?|https://cache\.nixos\.org/?)$' | grep -q .
-          nix config show | grep -qE '^max-jobs = 0$'
-      - name: Build every package
+      - name: Substitute every package with local builds forbidden
+        # devenv-nixpkgs applies its patches at evaluation time, which is a
+        # build Nix must be allowed to do. So the attribute list is evaluated
+        # first under normal settings, and only the package build runs with
+        # --max-jobs 0: any package output that is not in the cache is then an
+        # error, which is the proof this job exists to give.
         run: |
           system=$(nix eval --raw --impure --expr builtins.currentSystem)
           attrs=$(nix eval --raw ".#packages.$system" --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
+          echo "packages: $attrs"
           # shellcheck disable=SC2086
-          nix build --print-build-logs $attrs
+          nix build --max-jobs 0 --print-build-logs $attrs
