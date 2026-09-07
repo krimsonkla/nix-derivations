@@ -75,9 +75,14 @@ registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3,
 
 @test "D: no placeholder hashes, every rev is a full sha" {
   root=$(repo_root)
-  ! git -C "$root" grep -nE 'lib\.fakeHash|(hash|sha256|outputHash|npmDepsHash|vendorHash|cargoHash)[[:space:]]*=[[:space:]]*""' -- 'pkgs/*/*.nix'
-  ! git -C "$root" grep -nE 'sha256-A{43}=' -- 'pkgs/*/*.nix'
-  ! git -C "$root" grep -nE '0{52}' -- 'pkgs/*/*.nix'
+  # A bare `!` does not fail a bats test, so each placeholder pattern is an
+  # explicit if/return.
+  for pat in 'lib\.fakeHash|(hash|sha256|outputHash|npmDepsHash|vendorHash|cargoHash)[[:space:]]*=[[:space:]]*""' 'sha256-A{43}=' '0{52}'; do
+    if git -C "$root" grep -nE "$pat" -- 'pkgs/*/*.nix'; then
+      echo "placeholder hash matched pattern: $pat"
+      return 1
+    fi
+  done
   # Pin the rev enumeration to the registry: every fetchFromGitHub row carries
   # exactly one rev, so an empty enumeration cannot pass this loop vacuously.
   n_revs=$(enumerate_revs | grep -c . || true)
