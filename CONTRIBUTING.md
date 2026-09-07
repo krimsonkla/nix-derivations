@@ -21,7 +21,9 @@ does. Read them before touching `pkgs/` or `tests/`.
    governs anything is not.
 8. No git-tracker references in code comments. Put the reasoning in prose and
    the issue reference in the commit message.
-9. Adding a package adds registry rows. Removing one removes them.
+9. Adding a package adds registry rows, one per hash-bearing assignment (a
+   package with five `outputHash` lines carries five rows). Removing one
+   removes them.
 
 Enforcement map: 1 and 2 by the well-formedness test in `tests/hash-registry.bats`;
 3 by `sandbox = true` in every CI lane; 5 by `tests/package-list.bats`; 6 by the

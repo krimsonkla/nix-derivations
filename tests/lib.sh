@@ -28,7 +28,9 @@ list_declared_packages() {
   fi
 }
 
-# Hash-bearing ASSIGNMENT lines under pkgs/, as "<pkg> <attr>" rows.
+# Hash-bearing ASSIGNMENT lines under pkgs/, as "<pkg> <attr>" rows, ONE ROW
+# PER ASSIGNMENT (a multiset, so five outputHash lines in one package are five
+# rows, and the registry must carry five matching rows).
 # Assignment, not mention: a comment naming npmDepsHash is not a pin.
 enumerate_hash_attrs() {
   local root
@@ -36,7 +38,7 @@ enumerate_hash_attrs() {
   # No `\b`: git grep's ERE does not support it and silently matches nothing,
   # which is the empty-enumeration failure this guard exists to catch.
   git -C "$root" grep -nE '^[^#]*(^|[^A-Za-z_])(hash|sha256|outputHash|npmDepsHash|vendorHash|cargoHash)[[:space:]]*=' -- 'pkgs/*/*.nix' 'pkgs/*/**/*.nix' \
-    | sed -E 's#^pkgs/([^/]+)/[^:]*:[0-9]+:[[:space:]]*([A-Za-z]+)[[:space:]]*=.*#\1 \2#' | sort -u
+    | sed -E 's#^pkgs/([^/]+)/[^:]*:[0-9]+:[[:space:]]*([A-Za-z]+)[[:space:]]*=.*#\1 \2#' | sort
 }
 
 # rev assignment values under pkgs/, one per line.

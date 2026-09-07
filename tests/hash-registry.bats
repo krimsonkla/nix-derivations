@@ -14,8 +14,10 @@ setup() {
 registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3, $4}'; }
 
 @test "A: enumerated hash attributes equal registry rows both ways, non-empty" {
+  # Multiset comparison: neither side is deduplicated, so a package with several
+  # same-named hash attributes needs one registry row per assignment.
   enumerated=$(enumerate_hash_attrs)
-  registered=$(registry_rows | awk '{print $1, $2}' | sort -u)
+  registered=$(registry_rows | awk '{print $1, $2}' | sort)
   n_e=$(printf '%s\n' "$enumerated" | grep -c . || true)
   n_r=$(printf '%s\n' "$registered" | grep -c . || true)
   echo "hash-registry: $n_e enumerated, $n_r registered"
@@ -66,7 +68,8 @@ registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3,
   fi
   while read -r pkg attr kind source; do
     [ "$kind" = fetch ] || continue
-    printf '%s' "$checks" | grep -q "\"$pkg\"" || {
+    # Exact membership in the parsed JSON list, never a substring match.
+    printf '%s' "$checks" | python3 -c 'import sys,json; sys.exit(0 if sys.argv[1] in json.load(sys.stdin) else 1)' "$pkg" || {
       echo "$pkg not in checks"
       return 1
     }
