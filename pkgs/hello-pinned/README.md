@@ -6,7 +6,7 @@ https://github.com/octocat/Hello-World
 
 ## Pinned rev
 
-7fd1a60b01f91b314f59955a4e4d4e80d8edf11d
+553c2077f0edc3d5dc5d17262f6aa498e69d6f8e
 
 ## Why here, not nixpkgs
 
