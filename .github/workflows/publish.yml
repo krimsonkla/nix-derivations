@@ -60,5 +60,10 @@ jobs:
           system=$(nix eval --raw --impure --expr builtins.currentSystem)
           attrs=$(nix eval --raw ".#packages.$system" --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
           echo "packages: $attrs"
+          # Force full instantiation now: attribute names alone are answered
+          # lazily without importing nixpkgs, so the patch derivation would
+          # otherwise be realised inside the --max-jobs 0 build and fail it.
+          nix eval --raw ".#packages.$system" --apply 'ps: builtins.concatStringsSep "\n" (map (n: ps.${n}.drvPath) (builtins.attrNames ps))'
+          echo
           # shellcheck disable=SC2086
           nix build --max-jobs 0 --print-build-logs $attrs
