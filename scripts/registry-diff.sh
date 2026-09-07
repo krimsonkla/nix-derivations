@@ -24,6 +24,19 @@ declared_hash() {
   git -C "$root" grep -hoE "${attr}[[:space:]]*=[[:space:]]*\"[^\"]*\"" -- "pkgs/$pkg/*.nix" | sed -E 's/.*"([^"]*)"/\1/'
 }
 
+# Re-fetch a fixed-output derivation and compare it to its declared hash.
+# A first, ordinary build makes the output present (its dependencies such as
+# curl may substitute, and the FOD itself may come from a cache); the second
+# build with --rebuild then forces the fetcher to run again and errors if the
+# result differs from what is in the store. --rebuild alone fails on a fresh
+# runner ("outputs are not valid"), and a global substitute=false rebuilds the
+# fetcher's own dependencies from source, so neither is used on its own.
+refetch_and_verify() {
+  local ref="$1"
+  nix build --no-link "$ref"
+  nix build --no-link --rebuild "$ref"
+}
+
 main() {
   if [[ "${1:-}" == "--help" ]]; then
     usage
@@ -51,14 +64,14 @@ main() {
     fi
     n=$((n + 1))
     case "$kind" in
-      fetch) nix build --rebuild --option substitute false "$root#$pkg.src" ;;
+      fetch) refetch_and_verify "$root#$pkg.src" ;;
       lockfile)
         case "$attr" in
           npmDepsHash)
             [[ "$(prefetch-npm-deps "$root/pkgs/$pkg/$source")" == "$(declared_hash "$root" "$pkg" npmDepsHash)" ]] || log_fatal "$pkg npmDepsHash drifted"
             ;;
-          vendorHash) nix build --rebuild --option substitute false "$root#$pkg.goModules" ;;
-          cargoHash) nix build --rebuild --option substitute false "$root#$pkg.cargoDeps" ;;
+          vendorHash) refetch_and_verify "$root#$pkg.goModules" ;;
+          cargoHash) refetch_and_verify "$root#$pkg.cargoDeps" ;;
           *) log_fatal "unknown lockfile attr $attr" ;;
         esac
         ;;
