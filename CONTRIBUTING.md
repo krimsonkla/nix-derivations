@@ -28,11 +28,16 @@ does. Read them before touching `pkgs/` or `tests/`.
     assertion message or comment is called by an ordinal or a section sign;
     a positional label says nothing and goes stale when something is inserted
     before it.
+11. Every hand-packaged derivation a consumer keeps in-tree carries one of the
+    four classification words in the README (migrate, keep-local,
+    upstream-to-nixpkgs, retire); a consumer's allowlist rejects any other
+    word.
 
 Enforcement map: 1 and 2 by the well-formedness test in `tests/hash-registry.bats`;
 3 by `sandbox = true` in every CI lane; 5 by `tests/package-list.bats`; 6 by the
 count pins in both guards; 9 by the registry enumeration test's set equality;
-10 by `tests/named-labels.bats`.
+10 by `tests/named-labels.bats`; 11 by the consumer's ratchet, with the
+scanner's counts pinned by `tests/inventory.bats`.
 Conventions 4, 7 and 8 are **written-only** here: devenv-layers enforces 8 with
 a reference scanner that does not travel, and nothing checks 4 or 7.
 

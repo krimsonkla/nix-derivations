@@ -73,6 +73,30 @@ a README with the five required headings. The guards under `tests/` enforce the
 shape, and `tests/named-labels.bats` keeps every label named after its subject
 rather than its position.
 
+## Classification rules
+
+`scripts/inventory-derivations.py <checkout>...` lists every hand-packaged
+derivation in a set of local checkouts (one row per tracked `.nix` line
+carrying a builder, override or fetcher call, with the first line naming the
+kinds it recognises and the last line its counts). Each row is classified
+with one of four words, which is the vocabulary a consumer's allowlist
+enforces:
+
+- **migrate**: a third-party package or pinned artifact that nixpkgs lacks or
+  ships at an unusable version. It moves here when it is needed, never
+  pre-emptively.
+- **keep-local**: first-party code, local glue with no upstream, or an
+  override that only makes sense against one consumer's nixpkgs rev (a test
+  disabled for one rev, a hash correction that belongs upstream).
+- **upstream-to-nixpkgs**: nixpkgs now ships a usable version. The local copy
+  is dropped in favour of nixpkgs once the bump is verified; it never moves
+  here.
+- **retire**: a placeholder or superseded package. Deleted, never moved.
+
+Limits of the scan: it reads tracked `.nix` files only; it counts the first
+call on a line, so two calls on one line are one row; and vendored non-Nix
+source trees need a directory sweep it does not perform.
+
 ## CI
 
 Three GitHub Actions workflows:
