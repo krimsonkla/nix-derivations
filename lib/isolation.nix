@@ -2,17 +2,17 @@
 # flake (the overlay's library placement and the fixpoint check) and exported
 # to the isolation guard as JSON; tests/isolation-hostile.bash is the bash
 # half (the hostile environment per family) and the guard holds the two
-# equal. The families are the runtimes the epic's inventory and this org's
-# language layers actually use, plus the popular ones with an injection
-# variable; a runtime outside this table is a named failure, never a guess.
+# equal. The families are the runtimes packages here are expected to run
+# under, plus the popular ones with an injection variable; a runtime outside
+# this table is a named failure, never a guess.
 {lib}: rec {
   kinds = ["cli" "library"];
 
   # set: the language set a library of this family extends, null when the
   # family has no library idiom yet (declaring a library there is a named
   # failure, not a guess). interpreter: the attribute whose override carries
-  # the set through the fixpoint (`python3.override { packageOverrides }`),
-  # the idiom devenv-layers' common layer uses for python312. scrub: the
+  # the set through the fixpoint (`python3.override { packageOverrides }`,
+  # nixpkgs' own idiom for extending a python package set). scrub: the
   # variables a cli wrapper of this family unsets, the same list the guard
   # injects. match: store-path name prefixes the guard recognises as this
   # family's interpreter when it inspects a cli's bin/; `none` matches nothing
