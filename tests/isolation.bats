@@ -54,21 +54,28 @@ hits = sorted(f for f, v in fams.items() if any(name.startswith(m) for m in v["m
 print(hits[0] if hits else "unknown:" + name)' "$FAMILIES" "$name"
 }
 
-# detect_family <bin file> -> the family the command actually runs under:
-# a native executable is "none"; a script is classified by its shebang, and a
-# shell wrapper by the store path it execs (makeWrapper's shape). Prints
-# "unknown:<name>" for an interpreter the table lacks.
+# detect_family <bin file> -> the family the command actually runs under. A
+# script is classified by its shebang; a shell wrapper by the store path it
+# execs (makeWrapper's shape, with or without an argv0 override); a binary
+# wrapper (makeBinaryWrapper) by the first store path embedded in it; any
+# other native executable is "none". Prints "unknown:<name>" for an
+# interpreter the table lacks.
 detect_family() {
   local f shebang target
   f=$(readlink -f "$1")
   if [[ "$(head -c 2 "$f")" != "#!" ]]; then
-    echo none
+    target=$(grep -a -oE '/nix/store/[a-z0-9]{32}-[^/[:space:]"]+/bin/[^[:space:]"[:cntrl:]]+' "$f" | grep -vF "$(dirname "$f")" | head -1 || true)
+    if [[ -n "$target" ]]; then
+      family_of_store_path "$target"
+    else
+      echo none
+    fi
     return
   fi
   shebang=$(head -n 1 "$f" | sed -E 's/^#! ?//; s/ .*//')
   case "$(basename "$shebang")" in
     bash | sh | dash | zsh)
-      target=$(grep -oE '^exec "?/nix/store/[^" ]+' "$f" | head -1 | sed -E 's/^exec "?//')
+      target=$(grep -oE '^exec( -a "?[^" ]+"?)? "?/nix/store/[^" ]+' "$f" | head -1 | sed -E 's/^exec( -a "?[^" ]+"?)? "?//')
       if [[ -n "$target" ]]; then
         family_of_store_path "$target"
       else

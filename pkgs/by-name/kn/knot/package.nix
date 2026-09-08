@@ -6,7 +6,6 @@
   makeWrapper,
 }: let
   isolation = import ../../../../lib/isolation.nix {inherit lib;};
-  hostile = ../../../../tests/fixtures/isolation-hostile/babashka;
 in
   stdenvNoCC.mkDerivation (finalAttrs: {
     pname = "knot";
@@ -68,11 +67,17 @@ in
 
       # Isolation: the same commands from a directory holding a hostile bb.edn
       # and under the variables babashka honours, byte-identical, no marker.
-      h=$(mktemp -d) && cp -r ${hostile}/. $h
+      # The hostile files are written here rather than taken from tests/, so
+      # the package's hash depends on nothing outside pkgs/ and lib/; the
+      # :deps value is not valid EDN so a read fails at the parse, never a
+      # resolution.
+      h=$(mktemp -d) && mkdir -p $h/hijack/knot
+      printf '%s\n' '{:paths ["hijack"]' ' :deps {this-is-not-edn}}' > $h/bb.edn
+      printf '%s\n' '(ns knot.main)' '(defn -main [& _] (println "HIJACKED-BY-CWD"))' > $h/hijack/knot/main.clj
       hv=$(cd $h && $clean BABASHKA_PRELOADS='(println "HIJACKED-BY-ENV")' BABASHKA_CLASSPATH=$h/hijack knot --version)
       hp=$(cd $h && $clean BABASHKA_PRELOADS='(println "HIJACKED-BY-ENV")' BABASHKA_CLASSPATH=$h/hijack knot prime --json)
       [ "$hv" = "$version" ] && [ "$hp" = "$prime" ] || { echo "output changed under a hostile cwd or environment"; exit 1; }
-      ! grep -q HIJACKED <<<"$hv$hp"
+      if grep -q HIJACKED <<<"$hv$hp"; then echo "hijack marker in output"; exit 1; fi
       echo "isolation: 2 commands unchanged under a hostile cwd and environment"
       runHook postInstallCheck
     '';
