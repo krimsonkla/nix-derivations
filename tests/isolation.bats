@@ -37,7 +37,7 @@ teardown() { rm -rf "$TEST_TMPDIR"; }
 
 rows() { python3 -c 'import sys,json;[print(json.dumps(r)) for r in json.loads(sys.argv[1])]' "$ISOLATION_MANIFEST"; }
 field() { python3 -c 'import sys,json;v=json.loads(sys.argv[1]).get(sys.argv[2]);print(json.dumps(v) if isinstance(v,(list,dict)) else ("" if v is None else v))' "$1" "$2"; }
-json_lines() { python3 -c 'import sys,json;[print(x) for x in json.loads(sys.argv[1])]' "$1"; }
+json_lines() { python3 -c 'import sys,json;v=json.loads(sys.argv[1]);assert isinstance(v,list);[print(x) for x in v]' "$1" 2>/dev/null; }
 
 # family_of_store_path <path> -> the family whose match prefixes fit the
 # store directory name (hash stripped: /nix/store/<hash>-babashka-1.13.219/bin/bb
@@ -172,10 +172,28 @@ detect_family() {
     mkdir -p "$hcopy"
     cp -r "$hdir/." "$hcopy/"
     mapfile -t henv < <(hostile_env "$runtime" "$hcopy")
-    while read -r cmd vec; do
+    # lib.sh sets IFS to newline and tab, so the split here is explicit: with
+    # the default inherited, cmd swallowed the whole row and both runs failed
+    # identically as "command not found", which compared equal and passed.
+    while IFS=' ' read -r cmd vec; do
       cmds=$((cmds + 1))
-      mapfile -t args < <(json_lines "$vec")
+      [ -n "$cmd" ] && [ -n "$vec" ] || {
+        echo "$name: malformed smoke row '$cmd $vec'"
+        return 1
+      }
+      mapfile -t args < <(json_lines "$vec") || {
+        echo "$name: smoke vector '$vec' is not a JSON list"
+        return 1
+      }
+      [ -x "$out/bin/$cmd" ] || {
+        echo "$name: smoke command '$cmd' does not resolve under $out/bin"
+        return 1
+      }
       clean=$(cd "$TEST_TMPDIR" && env -i HOME="$TEST_TMPDIR" PATH="$out/bin" "$cmd" ${args[@]+"${args[@]}"} 2>&1; echo "exit=$?")
+      [[ "$clean" != *"exit=12"[67] ]] || {
+        echo "$name: $cmd did not run cleanly: $clean"
+        return 1
+      }
       hostile=$(cd "$hcopy" && env -i HOME="$TEST_TMPDIR" PATH="$out/bin" ${henv[@]+"${henv[@]}"} "$cmd" ${args[@]+"${args[@]}"} 2>&1; echo "exit=$?")
       [ "$clean" = "$hostile" ] || {
         echo "$name: $cmd $vec differs under the $runtime hostile run"

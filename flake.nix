@@ -172,6 +172,14 @@
           path = ./tests/fixtures/isolation/asset-with-bin/package.nix;
           kind = "asset";
         };
+        isolation-python-green = fixtureGuard "green" "python-cli" "2 2 0 0 9 3" {
+          path = ./tests/fixtures/isolation/python-cli/package.nix;
+          kind = "cli";
+        };
+        isolation-red-python-leak = fixtureGuard "red" "python-leak" "2 2 0 0 9 3" {
+          path = ./tests/fixtures/isolation/python-leak/package.nix;
+          kind = "cli";
+        };
         isolation-red-leak = fixtureGuard "red" "leaking-bin" "2 2 0 0 9 3" {
           path = ./tests/fixtures/isolation/leaking-bin/package.nix;
           kind = "cli";

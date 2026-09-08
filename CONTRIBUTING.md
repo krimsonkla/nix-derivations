@@ -57,7 +57,11 @@ does. Read them before touching `pkgs/` or `tests/`.
     own package set), ships no `bin/`, and is never at top level. An `asset`
     is data consumed by path (a model cache, a schema): it declares
     `passthru.files`, the paths under its output that prove its layout, ships
-    no `bin/`, propagates nothing, and is a top-level path. A consumer's
+    no `bin/`, propagates nothing, and is a top-level path. The asymmetry is
+    deliberate: a cli's `bin/` must equal its declared commands exactly,
+    because PATH is the surface; an asset's declared files need only exist,
+    because its layout is a contract and the hazard is an executable
+    appearing at all. A consumer's
     shell composes layers on their own language versions; a package that
     leaks its runtime onto PATH breaks that composition.
 
@@ -69,9 +73,11 @@ scanner's counts (the allowlist that rejects a fifth word is a consumer's own);
 12 by `tests/isolation.bats`
 with the standing reds `isolation-red-leak`, `isolation-red-unkinded`,
 `isolation-red-missing-subject`, `isolation-red-misdeclared-runtime`,
-`isolation-red-unknown-family`, `isolation-red-wrong-set` and
-`isolation-red-asset-bin`, and the green witnesses `isolation-library-green`
-and `isolation-asset-green`.
+`isolation-red-unknown-family`, `isolation-red-wrong-set`,
+`isolation-red-asset-bin` and `isolation-red-python-leak` (a python cli
+wrapped without the scrub imports the shell's packages through
+`NIX_PYTHONPATH`), and the green witnesses `isolation-library-green`,
+`isolation-asset-green` and `isolation-python-green`.
 Conventions 4, 7 and 8 are **written-only** here: nothing in this repository
 checks them.
 

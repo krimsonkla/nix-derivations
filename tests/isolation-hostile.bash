@@ -17,7 +17,9 @@ hostile_env() {
       printf '%s\n' "BABASHKA_PRELOADS=(println \"HIJACKED-BY-ENV\")" "BABASHKA_CLASSPATH=$dir/hijack"
       ;;
     python)
-      printf '%s\n' "PYTHONPATH=$dir" "PYTHONSTARTUP=$dir/sitecustomize.py" "PYTHONUSERBASE=$dir"
+      # NIX_PYTHONPATH is the entry nixpkgs' sitecustomize hands to
+      # site.addsitedir, which executes hijack.pth in the fixture directory.
+      printf '%s\n' "PYTHONPATH=$dir" "NIX_PYTHONPATH=$dir" "PYTHONSTARTUP=$dir/sitecustomize.py" "PYTHONUSERBASE=$dir"
       ;;
     node)
       printf '%s\n' "NODE_PATH=$dir" "NODE_OPTIONS=--require=$dir/hijack.js"
