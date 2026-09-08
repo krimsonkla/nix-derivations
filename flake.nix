@@ -57,6 +57,7 @@
         hash-registry = guard "hash-registry";
         charter = guard "charter";
         named-labels = guard "named-labels";
+        inventory = guard "inventory";
 
         # `nix flake check` only shape-checks an overlay. This applies
         # overlays.default to a fresh nixpkgs, builds every listed package
