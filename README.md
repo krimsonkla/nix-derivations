@@ -41,8 +41,7 @@ merge by building every package on a fresh runner with no credentials and local
 builds forbidden.
 
 This cache is dedicated to this repository and is **in addition to** any cache
-a consumer already uses (devenv-layers' own binary-cache layer points at
-`krimsonkla`, not here). A consumer therefore adds a second substituter and
+a consumer already uses. A consumer therefore adds a second substituter and
 public key; nothing here replaces the first.
 
 ### Who can write to the cache
@@ -67,10 +66,12 @@ decision; it is not accommodated silently.
 
 ## Adding a package
 
-Read `CONTRIBUTING.md`. One directory under `pkgs/`, one line in
-`pkgs/default.nix`, one row per captured hash in `tests/hash-registry.txt`, and
-a README with the five required headings. The guards under `tests/` enforce the
-shape, and `tests/named-labels.bats` keeps every label named after its subject
+Read `CONTRIBUTING.md`. One directory at `pkgs/by-name/<xy>/<name>/`, one
+entry in `pkgs/default.nix`, one row per captured hash in `tests/hash-registry.txt`, and
+a README with the five required headings. Every package declares its kind: a
+`cli` with a private runtime, a `library` inside its language set, or an
+`asset` consumed by path; `tests/isolation.bats` verifies all three, and refuses a runtime family its table
+does not know. The guards under `tests/` enforce the shape, and `tests/named-labels.bats` keeps every label named after its subject
 rather than its position.
 
 ## Classification rules
@@ -114,20 +115,18 @@ Three GitHub Actions workflows:
   `pkgs/` or `tests/`: re-fetches every registry row with substitution
   disabled.
 
-GitHub Actions is the gate here. That is a deliberate divergence from
-devenv-layers, whose gate is local hooks: a public repository gets free
-required checks that `--no-verify` cannot bypass. The repository maintainer
-owns the workflow deck.
+GitHub Actions is the gate here: a public repository gets free required checks
+that `--no-verify` cannot bypass. The repository maintainer owns the workflow
+deck.
 
 ## Residual risks
 
 - The repository's own `flake.lock` on `devenv-nixpkgs/rolling` is a build-time
   convenience. A consumer that `follows` its own nixpkgs gets no guarantee from
-  this repository's green check; that is covered from the consumer side by the
-  devenv-layers consumer-integration fixture, which pins both revisions.
-- The conventions in `CONTRIBUTING.md` are copies of devenv-layers text and can
-  drift from the originals with nothing detecting it. Conventions 4, 7 and 8
-  are written-only here; nothing enforces them.
+  this repository's green check; a consumer that wants one pins both revisions
+  on its own side.
+- Conventions 4, 7 and 8 in `CONTRIBUTING.md` are written-only; nothing
+  enforces them.
 - The lockfile half of the hash registry guard ships with zero rows on day one.
   Its count pin is asserted at 0, and the first lockfile-kind package is where
   that test first goes red and green.
@@ -137,7 +136,7 @@ owns the workflow deck.
   surface equals owner-merged changes, the same as before this repository
   existed. Pushes reach the default branch only through the owner, by virtue of
   the collaborator set rather than a push-restriction rule.
-- GitHub Actions is the gate of record, which devenv-layers deliberately does
-  not use; the two repositories hold different stances on purpose.
+- GitHub Actions is the gate of record. A change that never reaches a pull
+  request, or a checkout without network access to the runners, has no gate.
 - Every merge pushes full closures to the cache and nothing retires old paths;
   cache storage grows without a retention policy.

@@ -24,13 +24,30 @@ setup() { load lib.sh; }
 }
 
 @test "package-list: every package README carries the five required headings" {
-  root=$(repo_root)
   for p in $(list_declared_packages); do
     for h in "## Upstream" "## Pinned rev" "## Why here, not nixpkgs" "## Bump procedure" "## Patches"; do
-      grep -qxF "$h" "$root/pkgs/$p/README.md" || {
+      grep -qxF "$h" "$(package_dir "$p")/README.md" || {
         echo "$p/README.md missing '$h'"
         return 1
       }
     done
   done
+}
+
+@test "package-list: shard equals the first two letters and pname equals the directory" {
+  n=0
+  for p in $(list_declared_packages); do
+    n=$((n + 1))
+    dir=$(package_dir "$p")
+    [ -d "$dir" ] || {
+      echo "$p: expected directory pkgs/by-name/${p:0:2}/$p"
+      return 1
+    }
+    grep -qE "^[[:space:]]*pname[[:space:]]*=[[:space:]]*\"$p\"" "$dir/package.nix" || {
+      echo "$p: package.nix pname is not \"$p\""
+      return 1
+    }
+  done
+  echo "package-list: $n packages placed and named by their upstream name"
+  [ "$n" -eq 1 ]
 }

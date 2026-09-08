@@ -21,7 +21,7 @@ trap 'exit 1' INT TERM
 
 declared_hash() {
   local root="$1" pkg="$2" attr="$3"
-  git -C "$root" grep -hoE "${attr}[[:space:]]*=[[:space:]]*\"[^\"]*\"" -- "pkgs/$pkg/*.nix" | sed -E 's/.*"([^"]*)"/\1/'
+  git -C "$root" grep -hoE "${attr}[[:space:]]*=[[:space:]]*\"[^\"]*\"" -- "pkgs/by-name/*/$pkg/*.nix" | sed -E 's/.*"([^"]*)"/\1/'
 }
 
 # Re-fetch a fixed-output derivation and compare it to its declared hash.
@@ -60,7 +60,7 @@ main() {
       log_info "git diff failed; verifying every row"
       mode="all"
     else
-      changed_pkgs="$(sed -nE 's#^pkgs/([^/]+)/.*#\1#p' <<<"$diff_out" | sort -u)"
+      changed_pkgs="$(sed -nE 's#^pkgs/by-name/[^/]+/([^/]+)/.*#\1#p' <<<"$diff_out" | sort -u)"
       if grep -qx 'tests/hash-registry.txt' <<<"$diff_out"; then
         mode="all"
       fi
@@ -78,7 +78,7 @@ main() {
       lockfile)
         case "$attr" in
           npmDepsHash)
-            [[ "$(prefetch-npm-deps "$root/pkgs/$pkg/$source")" == "$(declared_hash "$root" "$pkg" npmDepsHash)" ]] || log_fatal "$pkg npmDepsHash drifted"
+            [[ "$(prefetch-npm-deps "$root/pkgs/by-name/${pkg:0:2}/$pkg/$source")" == "$(declared_hash "$root" "$pkg" npmDepsHash)" ]] || log_fatal "$pkg npmDepsHash drifted"
             ;;
           vendorHash) refetch_and_verify "$root#$pkg.goModules" ;;
           cargoHash) refetch_and_verify "$root#$pkg.cargoDeps" ;;

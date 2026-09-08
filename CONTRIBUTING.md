@@ -11,7 +11,16 @@ does. Read them before touching `pkgs/` or `tests/`.
 3. No runtime network. Builds run with `sandbox = true` on both systems.
 4. Patches reference an upstream PR or commit URL in the package README. No
    vendored forks of upstream source.
-5. One package per directory under `pkgs/`, listed in `pkgs/default.nix`.
+5. One package per directory at `pkgs/by-name/<xy>/<name>/package.nix`, where
+   `xy` is the first two letters of the name (nixpkgs' by-name layout), AND an
+   entry in `pkgs/default.nix` naming the file and the package's kind. by-name's
+   tree-walk discovery is not used: the explicit entry is what the guards
+   enumerate against, so a walk that finds nothing is red, not empty. The
+   attribute, directory and `pname` are the upstream name, lowercase, with no
+   version or vendor prefix; `version` is the tag without `v`; `meta` carries
+   `description` (no leading article, no trailing period), `homepage`,
+   `license`, `mainProgram` for a command, and `platforms`. A name nixpkgs
+   already ships is a declared override, never an accident.
 6. A guard that enumerates its subject reports the size of the set it
    validated, and a test pins that size. A guard whose enumeration breaks open
    matches nothing, exits 0, and is indistinguishable from clean; the pinned
@@ -32,18 +41,43 @@ does. Read them before touching `pkgs/` or `tests/`.
     four classification words in the README (migrate, keep-local,
     upstream-to-nixpkgs, retire); a consumer's allowlist rejects any other
     word.
+12. Every package is one of three kinds, declared in `pkgs/default.nix` and in
+    `passthru.kind`. A `cli` owns exactly the commands `passthru.bins` names,
+    propagates nothing, and has a private runtime: its wrapper is built with
+    `lib/isolation.nix`'s `wrapIsolated`, which unsets every variable the
+    runtime family honours, its `passthru.runtime` names that family, and its
+    `passthru.smoke` vectors must print the same bytes from a hostile
+    directory and environment. The guard does not take the family on trust:
+    it follows each command to the interpreter it execs and fails by name
+    when that interpreter is another family or one the table lacks, so a
+    runtime outside `lib/isolation.nix` is a named failure, never a pass;
+    `none` means a native executable. A `library` extends the language set
+    `passthru.set` names, through the interpreter's own fixpoint (never an
+    attrset merge, which leaves the attribute missing from the interpreter's
+    own package set), ships no `bin/`, and is never at top level. An `asset`
+    is data consumed by path (a model cache, a schema): it declares
+    `passthru.files`, the paths under its output that prove its layout, ships
+    no `bin/`, propagates nothing, and is a top-level path. A consumer's
+    shell composes layers on their own language versions; a package that
+    leaks its runtime onto PATH breaks that composition.
 
 Enforcement map: 1 and 2 by the well-formedness test in `tests/hash-registry.bats`;
 3 by `sandbox = true` in every CI lane; 5 by `tests/package-list.bats`; 6 by the
 count pins in both guards; 9 by the registry enumeration test's set equality;
-10 by `tests/named-labels.bats`; 11 by the consumer's ratchet, with the
-scanner's counts pinned by `tests/inventory.bats`.
-Conventions 4, 7 and 8 are **written-only** here: devenv-layers enforces 8 with
-a reference scanner that does not travel, and nothing checks 4 or 7.
+10 by `tests/named-labels.bats`; 11 by `tests/inventory.bats`, which pins the
+scanner's counts (the allowlist that rejects a fifth word is a consumer's own);
+12 by `tests/isolation.bats`
+with the standing reds `isolation-red-leak`, `isolation-red-unkinded`,
+`isolation-red-missing-subject`, `isolation-red-misdeclared-runtime`,
+`isolation-red-unknown-family`, `isolation-red-wrong-set` and
+`isolation-red-asset-bin`, and the green witnesses `isolation-library-green`
+and `isolation-asset-green`.
+Conventions 4, 7 and 8 are **written-only** here: nothing in this repository
+checks them.
 
 ## Package README headings
 
-Every `pkgs/<name>/README.md` carries exactly these headings, checked by the
+Every `pkgs/by-name/<xy>/<name>/README.md` carries exactly these headings, checked by the
 package-list guard:
 
 - `## Upstream`

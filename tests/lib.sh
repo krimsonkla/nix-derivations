@@ -8,11 +8,18 @@ IFS=$'\n\t'
 
 repo_root() { git rev-parse --show-toplevel; }
 
-# Directories under pkgs/ (the filesystem side of the package-list check).
+# Package directories under pkgs/by-name/<shard>/<name>/ (the filesystem side
+# of the package-list check). Depth is exact: the shard directories are not
+# packages, and a package nested one level deeper is not found.
 list_package_dirs() {
   local root
   root=$(repo_root)
-  find "$root/pkgs" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort
+  find "$root/pkgs/by-name" -mindepth 2 -maxdepth 2 -type d -exec basename {} \; | sort
+}
+
+# Path of a package's directory under by-name, from its name alone.
+package_dir() {
+  printf '%s/pkgs/by-name/%s/%s' "$(repo_root)" "${1:0:2}" "$1"
 }
 
 # Attribute names of the explicit list (the declared side). Inside a Nix
@@ -37,14 +44,14 @@ enumerate_hash_attrs() {
   root=$(repo_root)
   # No `\b`: git grep's ERE does not support it and silently matches nothing,
   # which is the empty-enumeration failure this guard exists to catch.
-  git -C "$root" grep -nE '^[^#]*(^|[^A-Za-z_])(hash|sha256|outputHash|npmDepsHash|vendorHash|cargoHash)[[:space:]]*=' -- 'pkgs/*/*.nix' 'pkgs/*/**/*.nix' \
-    | sed -E 's#^pkgs/([^/]+)/[^:]*:[0-9]+:[[:space:]]*([A-Za-z]+)[[:space:]]*=.*#\1 \2#' | sort
+  git -C "$root" grep -nE '^[^#]*(^|[^A-Za-z_])(hash|sha256|outputHash|npmDepsHash|vendorHash|cargoHash)[[:space:]]*=' -- 'pkgs/by-name/*/*/*.nix' 'pkgs/by-name/*/*/**/*.nix' \
+    | sed -E 's#^pkgs/by-name/[^/]+/([^/]+)/[^:]*:[0-9]+:[[:space:]]*([A-Za-z]+)[[:space:]]*=.*#\1 \2#' | sort
 }
 
 # rev assignment values under pkgs/, one per line.
 enumerate_revs() {
   local root
   root=$(repo_root)
-  git -C "$root" grep -hoE '(^|[^A-Za-z_])rev[[:space:]]*=[[:space:]]*"[^"]*"' -- 'pkgs/*/*.nix' \
+  git -C "$root" grep -hoE '(^|[^A-Za-z_])rev[[:space:]]*=[[:space:]]*"[^"]*"' -- 'pkgs/by-name/*/*/*.nix' \
     | sed -E 's#.*rev[[:space:]]*=[[:space:]]*"([^"]*)"#\1#' | sort -u
 }
