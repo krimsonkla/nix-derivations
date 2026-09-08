@@ -17,7 +17,7 @@
     inherit (nixpkgs) lib;
     sys = import ./lib/systems.nix {inherit lib;};
     packageDirs = import ./pkgs;
-    mkPackages = pkgs: lib.mapAttrs (_: dir: pkgs.callPackage dir {}) packageDirs;
+    mkPackages = pkgs: lib.mapAttrs (_: e: pkgs.callPackage e.path {}) packageDirs;
     perSystem = sys.forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
     in {

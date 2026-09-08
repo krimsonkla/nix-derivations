@@ -67,8 +67,8 @@ decision; it is not accommodated silently.
 
 ## Adding a package
 
-Read `CONTRIBUTING.md`. One directory under `pkgs/`, one line in
-`pkgs/default.nix`, one row per captured hash in `tests/hash-registry.txt`, and
+Read `CONTRIBUTING.md`. One directory at `pkgs/by-name/<xy>/<name>/`, one
+entry in `pkgs/default.nix`, one row per captured hash in `tests/hash-registry.txt`, and
 a README with the five required headings. The guards under `tests/` enforce the
 shape, and `tests/named-labels.bats` keeps every label named after its subject
 rather than its position.

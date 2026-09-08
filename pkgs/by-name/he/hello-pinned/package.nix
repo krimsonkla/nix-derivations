@@ -17,6 +17,12 @@ stdenvNoCC.mkDerivation {
     mkdir -p $out/share/hello-pinned
     cp README $out/share/hello-pinned/README
   '';
+  passthru = {
+    kind = "cli";
+    bins = [];
+    smoke = {};
+    runtime = "none";
+  };
   meta = {
     description = "Placeholder package that exercises fetchFromGitHub, the guards, flake check, cachix push and substitute-only";
     license = lib.licenses.mit;

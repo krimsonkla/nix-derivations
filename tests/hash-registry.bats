@@ -36,8 +36,8 @@ registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3,
     n=$((n + 1))
     case "$attr" in
       npmDepsHash)
-        declared=$(git -C "$(repo_root)" grep -hoE 'npmDepsHash[[:space:]]*=[[:space:]]*"[^"]*"' -- "pkgs/$pkg/*.nix" | sed -E 's/.*"([^"]*)"/\1/')
-        computed=$(prefetch-npm-deps "$(repo_root)/pkgs/$pkg/$source")
+        declared=$(git -C "$(repo_root)" grep -hoE 'npmDepsHash[[:space:]]*=[[:space:]]*"[^"]*"' -- "pkgs/by-name/*/$pkg/*.nix" | sed -E 's/.*"([^"]*)"/\1/')
+        computed=$(prefetch-npm-deps "$(package_dir "$pkg")/$source")
         [ "$declared" = "$computed" ] || {
           echo "$pkg npmDepsHash $declared != $computed"
           return 1
@@ -81,7 +81,7 @@ registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3,
   # A bare `!` does not fail a bats test, so each placeholder pattern is an
   # explicit if/return.
   for pat in 'lib\.fakeHash|(hash|sha256|outputHash|npmDepsHash|vendorHash|cargoHash)[[:space:]]*=[[:space:]]*""' 'sha256-A{43}=' '0{52}'; do
-    if git -C "$root" grep -nE "$pat" -- 'pkgs/*/*.nix'; then
+    if git -C "$root" grep -nE "$pat" -- 'pkgs/by-name/*/*/*.nix'; then
       echo "placeholder hash matched pattern: $pat"
       return 1
     fi

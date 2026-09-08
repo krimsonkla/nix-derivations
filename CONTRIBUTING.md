@@ -11,7 +11,16 @@ does. Read them before touching `pkgs/` or `tests/`.
 3. No runtime network. Builds run with `sandbox = true` on both systems.
 4. Patches reference an upstream PR or commit URL in the package README. No
    vendored forks of upstream source.
-5. One package per directory under `pkgs/`, listed in `pkgs/default.nix`.
+5. One package per directory at `pkgs/by-name/<xy>/<name>/package.nix`, where
+   `xy` is the first two letters of the name (nixpkgs' by-name layout), AND an
+   entry in `pkgs/default.nix` naming the file and the package's kind. by-name's
+   tree-walk discovery is not used: the explicit entry is what the guards
+   enumerate against, so a walk that finds nothing is red, not empty. The
+   attribute, directory and `pname` are the upstream name, lowercase, with no
+   version or vendor prefix; `version` is the tag without `v`; `meta` carries
+   `description` (no leading article, no trailing period), `homepage`,
+   `license`, `mainProgram` for a command, and `platforms`. A name nixpkgs
+   already ships is a declared override, never an accident.
 6. A guard that enumerates its subject reports the size of the set it
    validated, and a test pins that size. A guard whose enumeration breaks open
    matches nothing, exits 0, and is indistinguishable from clean; the pinned
@@ -43,7 +52,7 @@ a reference scanner that does not travel, and nothing checks 4 or 7.
 
 ## Package README headings
 
-Every `pkgs/<name>/README.md` carries exactly these headings, checked by the
+Every `pkgs/by-name/<xy>/<name>/README.md` carries exactly these headings, checked by the
 package-list guard:
 
 - `## Upstream`
