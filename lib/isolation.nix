@@ -26,10 +26,14 @@
       scrub = ["BABASHKA_PRELOADS" "BABASHKA_CLASSPATH"];
       match = ["babashka"];
     };
+    # NIX_PYTHONPATH is nixpkgs' own: its python's sitecustomize feeds every
+    # entry to site.addsitedir, which also executes .pth files, and a devenv
+    # shell sets it for the shell's interpreter. A wrapper that unsets only
+    # PYTHONPATH still imports the shell's packages through it.
     python = {
       set = "python3Packages";
       interpreter = "python3";
-      scrub = ["PYTHONPATH" "PYTHONHOME" "PYTHONSTARTUP" "PYTHONUSERBASE"];
+      scrub = ["PYTHONPATH" "NIX_PYTHONPATH" "PYTHONHOME" "PYTHONSTARTUP" "PYTHONUSERBASE"];
       match = ["python3" "python-"];
     };
     node = {

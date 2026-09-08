@@ -69,9 +69,11 @@ scanner's counts (the allowlist that rejects a fifth word is a consumer's own);
 12 by `tests/isolation.bats`
 with the standing reds `isolation-red-leak`, `isolation-red-unkinded`,
 `isolation-red-missing-subject`, `isolation-red-misdeclared-runtime`,
-`isolation-red-unknown-family`, `isolation-red-wrong-set` and
-`isolation-red-asset-bin`, and the green witnesses `isolation-library-green`
-and `isolation-asset-green`.
+`isolation-red-unknown-family`, `isolation-red-wrong-set`,
+`isolation-red-asset-bin` and `isolation-red-python-leak` (a python cli
+wrapped without the scrub imports the shell's packages through
+`NIX_PYTHONPATH`), and the green witnesses `isolation-library-green`,
+`isolation-asset-green` and `isolation-python-green`.
 Conventions 4, 7 and 8 are **written-only** here: nothing in this repository
 checks them.
 
