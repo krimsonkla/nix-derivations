@@ -69,8 +69,10 @@ decision; it is not accommodated silently.
 
 Read `CONTRIBUTING.md`. One directory at `pkgs/by-name/<xy>/<name>/`, one
 entry in `pkgs/default.nix`, one row per captured hash in `tests/hash-registry.txt`, and
-a README with the five required headings. The guards under `tests/` enforce the
-shape, and `tests/named-labels.bats` keeps every label named after its subject
+a README with the five required headings. Every package declares its kind: a
+`cli` with a private runtime, or a `library` inside its language set;
+`tests/isolation.bats` verifies both, and refuses a runtime family its table
+does not know. The guards under `tests/` enforce the shape, and `tests/named-labels.bats` keeps every label named after its subject
 rather than its position.
 
 ## Classification rules

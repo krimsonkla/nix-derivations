@@ -25,12 +25,15 @@ setup() {
   [ "$n" -eq 6 ]
 }
 
-@test "charter: CONTRIBUTING lists the nine conventions and the enforcement map" {
+@test "charter: CONTRIBUTING lists the twelve conventions and the enforcement map" {
   # Count numbered items only inside the Conventions section; the Bumping
-  # section is numbered too and must not inflate this.
-  n=$(awk '/^## Conventions/{f=1;next} /^## /{f=0} f && /^[1-9]\. /{c++} END{print c+0}' "$ROOT/CONTRIBUTING.md")
+  # section is numbered too and must not inflate this. Two-digit numbers
+  # count: a single-digit class here once reported nine while eleven were
+  # listed, which is the silently-short enumeration this pin exists to catch.
+  n=$(awk '/^## Conventions/{f=1;next} /^## /{f=0} f && /^[0-9]+\. /{c++} END{print c+0}' "$ROOT/CONTRIBUTING.md")
   echo "charter: $n conventions"
-  [ "$n" -eq 9 ]
+  # Twelve since the package-kind convention; the pin moves with the list.
+  [ "$n" -eq 12 ]
   grep -qF "written-only" "$ROOT/CONTRIBUTING.md"
 }
 

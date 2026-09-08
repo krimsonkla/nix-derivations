@@ -41,12 +41,32 @@ does. Read them before touching `pkgs/` or `tests/`.
     four classification words in the README (migrate, keep-local,
     upstream-to-nixpkgs, retire); a consumer's allowlist rejects any other
     word.
+12. Every package is one of two kinds, declared in `pkgs/default.nix` and in
+    `passthru.kind`. A `cli` owns exactly the commands `passthru.bins` names,
+    propagates nothing, and has a private runtime: its wrapper is built with
+    `lib/isolation.nix`'s `wrapIsolated`, which unsets every variable the
+    runtime family honours, its `passthru.runtime` names that family, and its
+    `passthru.smoke` vectors must print the same bytes from a hostile
+    directory and environment. The guard does not take the family on trust:
+    it follows each command to the interpreter it execs and fails by name
+    when that interpreter is another family or one the table lacks, so a
+    runtime outside `lib/isolation.nix` is a named failure, never a pass;
+    `none` means a native executable. A `library` extends the language set
+    `passthru.set` names, through the interpreter's own fixpoint (never an
+    attrset merge, which leaves the attribute missing from the interpreter's
+    own package set), ships no `bin/`, and is never at top level. A
+    consumer's shell composes layers on their own language versions; a
+    package that leaks its runtime onto PATH breaks that composition.
 
 Enforcement map: 1 and 2 by the well-formedness test in `tests/hash-registry.bats`;
 3 by `sandbox = true` in every CI lane; 5 by `tests/package-list.bats`; 6 by the
 count pins in both guards; 9 by the registry enumeration test's set equality;
 10 by `tests/named-labels.bats`; 11 by the consumer's ratchet, with the
-scanner's counts pinned by `tests/inventory.bats`.
+scanner's counts pinned by `tests/inventory.bats`; 12 by `tests/isolation.bats`
+with the standing reds `isolation-red-leak`, `isolation-red-unkinded`,
+`isolation-red-missing-subject`, `isolation-red-misdeclared-runtime`,
+`isolation-red-unknown-family` and `isolation-red-wrong-set`, and the green
+witness `isolation-library-green`.
 Conventions 4, 7 and 8 are **written-only** here: devenv-layers enforces 8 with
 a reference scanner that does not travel, and nothing checks 4 or 7.
 
