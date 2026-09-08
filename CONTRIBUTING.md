@@ -57,7 +57,11 @@ does. Read them before touching `pkgs/` or `tests/`.
     own package set), ships no `bin/`, and is never at top level. An `asset`
     is data consumed by path (a model cache, a schema): it declares
     `passthru.files`, the paths under its output that prove its layout, ships
-    no `bin/`, propagates nothing, and is a top-level path. A consumer's
+    no `bin/`, propagates nothing, and is a top-level path. The asymmetry is
+    deliberate: a cli's `bin/` must equal its declared commands exactly,
+    because PATH is the surface; an asset's declared files need only exist,
+    because its layout is a contract and the hazard is an executable
+    appearing at all. A consumer's
     shell composes layers on their own language versions; a package that
     leaks its runtime onto PATH breaks that composition.
 
