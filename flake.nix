@@ -38,7 +38,8 @@
     # explicitly. An attrset merge onto the set would leave the attribute
     # missing from `python3.pkgs` and from anything built with its callPackage.
     mkOverlay = index: final: prev: let
-      clis = lib.filterAttrs (_: e: e.kind == "cli") index;
+      # A cli and an asset are both top-level attributes; only a library moves.
+      clis = lib.filterAttrs (_: e: e.kind != "library") index;
       libraries = lib.filterAttrs (_: e: e.kind == "library") index;
       byInterp = lib.groupBy (n: (familyOf libraries.${n}).interpreter) (lib.attrNames libraries);
     in
@@ -91,7 +92,7 @@
     checks = sys.forAllSystems (system: let
       v = perSystem.${system};
       inherit (v) pkgs;
-      fixtureGuard = expect: fixture: entry: let
+      fixtureGuard = expect: fixture: pins: entry: let
         idx = packageDirs // {${fixture} = entry;};
         # The wrong-set fixture is a python library whose passthru names a set
         # no family provides; the index says python3Packages so it can be
@@ -106,14 +107,13 @@
           packages = pk;
           overlaid = overlaidFixture;
         };
-        families = toString (builtins.length (builtins.attrNames isolation.families));
       in
         pkgs.runCommand "isolation-${expect}-${fixture}" {
           nativeBuildInputs = [pkgs.bats pkgs.git pkgs.python3];
           ISOLATION_MANIFEST = builtins.toJSON m;
           FAMILIES = builtins.toJSON isolation.families;
           DECLARED = builtins.toJSON (builtins.attrNames idx);
-          ISOLATION_PINS = "2 1 1 ${families} 2";
+          ISOLATION_PINS = pins;
         } ''
           cp -r ${self} src && chmod -R u+w src && cd src
           git init -q && git config user.email guard@localhost && git config user.name guard && git add -A
@@ -121,7 +121,7 @@
           cat log
           if [ "${expect}" = green ]; then
             [ "$rc" -eq 0 ] || { echo "green check: the guard failed with fixture ${fixture}"; exit 1; }
-            echo "isolation-green-${fixture}: library branch green" | tee $out
+            echo "isolation-green-${fixture}: fixture branch green" | tee $out
           else
             [ "$rc" -ne 0 ] || { echo "red check: the guard passed with fixture ${fixture}"; exit 1; }
             grep -q '${fixture}' log
@@ -159,32 +159,40 @@
         # only when bats fails naming the fixture; the green (a trivial python
         # library) passes when the library branch is green with the fixture
         # counted, and proves the overlay places a library for real.
-        isolation-library-green = fixtureGuard "green" "fixture-lib" {
+        isolation-library-green = fixtureGuard "green" "fixture-lib" "2 1 1 0 9 2" {
           path = ./tests/fixtures/isolation/fixture-lib/package.nix;
           kind = "library";
           set = "python3Packages";
         };
-        isolation-red-leak = fixtureGuard "red" "leaking-bin" {
+        isolation-asset-green = fixtureGuard "green" "fixture-asset" "2 1 0 1 9 2" {
+          path = ./tests/fixtures/isolation/fixture-asset/package.nix;
+          kind = "asset";
+        };
+        isolation-red-asset-bin = fixtureGuard "red" "asset-with-bin" "2 1 0 1 9 2" {
+          path = ./tests/fixtures/isolation/asset-with-bin/package.nix;
+          kind = "asset";
+        };
+        isolation-red-leak = fixtureGuard "red" "leaking-bin" "2 2 0 0 9 3" {
           path = ./tests/fixtures/isolation/leaking-bin/package.nix;
           kind = "cli";
         };
-        isolation-red-unkinded = fixtureGuard "red" "unkinded" {
+        isolation-red-unkinded = fixtureGuard "red" "unkinded" "2 2 0 0 9 3" {
           path = ./tests/fixtures/isolation/unkinded/package.nix;
           kind = "cli";
         };
-        isolation-red-missing-subject = fixtureGuard "red" "missing-subject" {
+        isolation-red-missing-subject = fixtureGuard "red" "missing-subject" "2 2 0 0 9 3" {
           path = ./tests/fixtures/isolation/missing-subject/package.nix;
           kind = "cli";
         };
-        isolation-red-misdeclared-runtime = fixtureGuard "red" "misdeclared-runtime" {
+        isolation-red-misdeclared-runtime = fixtureGuard "red" "misdeclared-runtime" "2 2 0 0 9 3" {
           path = ./tests/fixtures/isolation/misdeclared-runtime/package.nix;
           kind = "cli";
         };
-        isolation-red-unknown-family = fixtureGuard "red" "unknown-family" {
+        isolation-red-unknown-family = fixtureGuard "red" "unknown-family" "2 2 0 0 9 3" {
           path = ./tests/fixtures/isolation/unknown-family/package.nix;
           kind = "cli";
         };
-        isolation-red-wrong-set = fixtureGuard "red" "wrong-set" {
+        isolation-red-wrong-set = fixtureGuard "red" "wrong-set" "2 1 1 0 9 2" {
           path = ./tests/fixtures/isolation/wrong-set/package.nix;
           kind = "library";
           set = "python3Packages";

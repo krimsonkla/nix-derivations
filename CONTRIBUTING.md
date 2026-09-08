@@ -41,7 +41,7 @@ does. Read them before touching `pkgs/` or `tests/`.
     four classification words in the README (migrate, keep-local,
     upstream-to-nixpkgs, retire); a consumer's allowlist rejects any other
     word.
-12. Every package is one of two kinds, declared in `pkgs/default.nix` and in
+12. Every package is one of three kinds, declared in `pkgs/default.nix` and in
     `passthru.kind`. A `cli` owns exactly the commands `passthru.bins` names,
     propagates nothing, and has a private runtime: its wrapper is built with
     `lib/isolation.nix`'s `wrapIsolated`, which unsets every variable the
@@ -54,9 +54,12 @@ does. Read them before touching `pkgs/` or `tests/`.
     `none` means a native executable. A `library` extends the language set
     `passthru.set` names, through the interpreter's own fixpoint (never an
     attrset merge, which leaves the attribute missing from the interpreter's
-    own package set), ships no `bin/`, and is never at top level. A
-    consumer's shell composes layers on their own language versions; a
-    package that leaks its runtime onto PATH breaks that composition.
+    own package set), ships no `bin/`, and is never at top level. An `asset`
+    is data consumed by path (a model cache, a schema): it declares
+    `passthru.files`, the paths under its output that prove its layout, ships
+    no `bin/`, propagates nothing, and is a top-level path. A consumer's
+    shell composes layers on their own language versions; a package that
+    leaks its runtime onto PATH breaks that composition.
 
 Enforcement map: 1 and 2 by the well-formedness test in `tests/hash-registry.bats`;
 3 by `sandbox = true` in every CI lane; 5 by `tests/package-list.bats`; 6 by the
@@ -66,8 +69,9 @@ scanner's counts (the allowlist that rejects a fifth word is a consumer's own);
 12 by `tests/isolation.bats`
 with the standing reds `isolation-red-leak`, `isolation-red-unkinded`,
 `isolation-red-missing-subject`, `isolation-red-misdeclared-runtime`,
-`isolation-red-unknown-family` and `isolation-red-wrong-set`, and the green
-witness `isolation-library-green`.
+`isolation-red-unknown-family`, `isolation-red-wrong-set` and
+`isolation-red-asset-bin`, and the green witnesses `isolation-library-green`
+and `isolation-asset-green`.
 Conventions 4, 7 and 8 are **written-only** here: nothing in this repository
 checks them.
 

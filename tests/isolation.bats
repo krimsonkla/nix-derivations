@@ -1,10 +1,11 @@
 #!/usr/bin/env bats
-# Isolation guard. Every package is one of two kinds: a cli whose runtime is
+# Isolation guard. Every package is one of three kinds: a cli whose runtime is
 # private (bin/ holds exactly its commands, nothing propagates, the runtime it
 # actually execs is the family it declares, and its smoke vectors print the
-# same bytes under a hostile directory and environment), or a library that
+# same bytes under a hostile directory and environment); a library that
 # lives inside its language set through the interpreter's fixpoint and never
-# at top level. The facts arrive as a manifest the flake evaluated
+# at top level; or an asset, data consumed by path, which ships its declared
+# files and no bin/, propagates nothing, and is a top-level path. The facts arrive as a manifest the flake evaluated
 # (ISOLATION_MANIFEST) and the family table (FAMILIES); outside a check
 # derivation they are evaluated here. A runtime the table does not know is a
 # named failure, never a pass. Counts are reported and pinned; ISOLATION_PINS
@@ -23,10 +24,10 @@ setup() {
   fi
   export ISOLATION_MANIFEST FAMILIES
   if [[ -n "${ISOLATION_PINS:-}" ]]; then
-    IFS=' ' read -r PIN_N PIN_C PIN_L PIN_F PIN_S <<<"$ISOLATION_PINS"
+    IFS=' ' read -r PIN_N PIN_C PIN_L PIN_A PIN_F PIN_S <<<"$ISOLATION_PINS"
     PIN_SOURCE="ISOLATION_PINS override"
   else
-    IFS=' ' read -r PIN_N PIN_C PIN_L PIN_F PIN_S <<<"1 1 0 9 2"
+    IFS=' ' read -r PIN_N PIN_C PIN_L PIN_A PIN_F PIN_S <<<"1 1 0 0 9 2"
     PIN_SOURCE="default"
   fi
   TEST_TMPDIR=$(mktemp -d -p "${BATS_TEST_TMPDIR:?BATS_TEST_TMPDIR unset}")
@@ -86,10 +87,11 @@ detect_family() {
   esac
 }
 
-@test "isolation: every package has a kind from the two-word vocabulary and the counts reconcile" {
+@test "isolation: every package has a kind from the three-word vocabulary and the counts reconcile" {
   n=0
   c=0
   l=0
+  a=0
   while read -r row; do
     n=$((n + 1))
     name=$(field "$row" name)
@@ -106,15 +108,16 @@ detect_family() {
     case "$kind" in
       cli) c=$((c + 1)) ;;
       library) l=$((l + 1)) ;;
+      asset) a=$((a + 1)) ;;
       *)
-        echo "$name: kind '$kind' is not cli or library"
+        echo "$name: kind '$kind' is not cli, library or asset"
         return 1
         ;;
     esac
   done < <(rows)
-  echo "isolation: $n packages, $c cli, $l library (pins: $PIN_SOURCE)"
-  [ "$n" -eq $((c + l)) ]
-  [ "$n" -eq "$PIN_N" ] && [ "$c" -eq "$PIN_C" ] && [ "$l" -eq "$PIN_L" ]
+  echo "isolation: $n packages, $c cli, $l library, $a asset (pins: $PIN_SOURCE)"
+  [ "$n" -eq $((c + l + a)) ]
+  [ "$n" -eq "$PIN_N" ] && [ "$c" -eq "$PIN_C" ] && [ "$l" -eq "$PIN_L" ] && [ "$a" -eq "$PIN_A" ]
 }
 
 @test "isolation: the hostile table, the set table and the fixture directories name the same families" {
@@ -229,4 +232,45 @@ detect_family() {
   done < <(rows)
   echo "isolation: $n libraries checked at their set (pins: $PIN_SOURCE)"
   [ "$n" -eq "$PIN_L" ]
+}
+
+@test "isolation: every asset ships its declared files, no bin/, propagates nothing, and is a top-level path" {
+  n=0
+  while read -r row; do
+    [ "$(field "$row" kind)" = asset ] || continue
+    n=$((n + 1))
+    name=$(field "$row" name)
+    out=$(field "$row" out)
+    files=$(field "$row" files)
+    [ -n "$files" ] && [ "$files" != "[]" ] || {
+      echo "$name: an asset declares passthru.files, the paths under \$out that prove its layout (missing subject)"
+      return 1
+    }
+    for f in $(json_lines "$files"); do
+      [ -e "$out/$f" ] || {
+        echo "$name: declared file $f is absent from the output"
+        return 1
+      }
+    done
+    [ ! -e "$out/bin" ] || {
+      echo "$name: an asset ships bin/ (leaking bin)"
+      return 1
+    }
+    for ch in propagated_build_inputs propagated_native_build_inputs propagated_user_env_pkgs; do
+      [ "$(field "$row" $ch)" = "[]" ] || {
+        echo "$name: $ch is not empty"
+        return 1
+      }
+    done
+    if [ -e "$out/nix-support/setup-hook" ] || ls "$out"/nix-support/propagated-* >/dev/null 2>&1; then
+      echo "$name: nix-support carries a setup hook or propagation file"
+      return 1
+    fi
+    [ "$(field "$row" top_level_absent)" = False ] || {
+      echo "$name: an asset is a top-level path and is absent"
+      return 1
+    }
+  done < <(rows)
+  echo "isolation: $n assets checked by their declared files (pins: $PIN_SOURCE)"
+  [ "$n" -eq "$PIN_A" ]
 }

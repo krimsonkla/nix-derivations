@@ -33,4 +33,7 @@ Per `CONTRIBUTING.md` › Bumping. `version` is the tag without `v`.
 
 ## Patches
 
-None.
+None. The hostile `bb.edn` and hijack namespace the build's isolation check
+writes are a copy of the guard's babashka fixture under `tests/`, kept apart so
+the package's hash does not depend on test data; a second babashka package is
+where to revisit the duplication.

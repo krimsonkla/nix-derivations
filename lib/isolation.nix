@@ -6,7 +6,9 @@
 # under, plus the popular ones with an injection variable; a runtime outside
 # this table is a named failure, never a guess.
 {lib}: rec {
-  kinds = ["cli" "library"];
+  # cli: a command with a private runtime. library: extends a language set.
+  # asset: data consumed by path (a model cache, a schema), never on PATH.
+  kinds = ["cli" "library" "asset"];
 
   # set: the language set a library of this family extends, null when the
   # family has no library idiom yet (declaring a library there is a named
@@ -142,6 +144,7 @@
       bins = pt.bins or null;
       smoke = pt.smoke or null;
       runtime = pt.runtime or null;
+      files = pt.files or null;
       out = "${p}";
       propagated_build_inputs = map toString (p.propagatedBuildInputs or []);
       propagated_native_build_inputs = map toString (p.propagatedNativeBuildInputs or []);
