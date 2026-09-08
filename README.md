@@ -138,5 +138,10 @@ deck.
   the collaborator set rather than a push-restriction rule.
 - GitHub Actions is the gate of record. A change that never reaches a pull
   request, or a checkout without network access to the runners, has no gate.
-- Every merge pushes full closures to the cache and nothing retires old paths;
+- The cache holds what the publish workflow builds, not the runtime closure
+  it substituted from cache.nixos.org: a package's own output is here, its
+  interpreter is not. A consumer needs both caches, and a check that copies a
+  whole closure from this cache alone fails at the first package with a real
+  runtime.
+- Every merge pushes what it built to the cache and nothing retires old paths;
   cache storage grows without a retention policy.

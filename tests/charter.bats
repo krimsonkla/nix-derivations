@@ -19,10 +19,11 @@ setup() {
   grep -qF "reopens" "$ROOT/README.md"
 }
 
-@test "charter: README residual-risks section has six bullets" {
+@test "charter: README residual-risks section has seven bullets" {
   n=$(awk '/^## Residual risks/{f=1;next} /^## /{f=0} f && /^- /{c++} END{print c+0}' "$ROOT/README.md")
   echo "charter: $n residual bullets"
-  [ "$n" -eq 6 ]
+  # Seven since the cache-scope risk; the pin moves with the list.
+  [ "$n" -eq 7 ]
 }
 
 @test "charter: CONTRIBUTING lists the twelve conventions and the enforcement map" {
