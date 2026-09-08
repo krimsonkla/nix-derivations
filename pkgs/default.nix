@@ -9,8 +9,8 @@
 # library, the language set it extends. The guard in tests/isolation.bats
 # asserts these equal the package's own passthru declarations.
 {
-  hello-pinned = {
-    path = ./by-name/he/hello-pinned/package.nix;
+  knot = {
+    path = ./by-name/kn/knot/package.nix;
     kind = "cli";
   };
 }

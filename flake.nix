@@ -59,6 +59,22 @@
         named-labels = guard "named-labels";
         inventory = guard "inventory";
 
+        # The same require-all.clj the knot build runs, over a fixture holding
+        # one namespace that requires a library babashka does not bundle. The
+        # check passes only when the form exits non-zero naming that library,
+        # so the build-time check cannot rot into a claim.
+        knot-namespace-check-red = pkgs.runCommand "knot-namespace-check-red" {nativeBuildInputs = [pkgs.babashka];} ''
+          fixture=${./tests/fixtures/unbundled-require}
+          set +e
+          bb --classpath "$fixture" ${./pkgs/by-name/kn/knot/require-all.clj} "$fixture" >log 2>&1
+          rc=$?
+          set -e
+          cat log
+          [ "$rc" -ne 0 ] || { echo "red check: require-all.clj passed over the unbundled fixture"; exit 1; }
+          grep -q 'clj_http/client' log
+          echo "knot-namespace-check-red: 1 unbundled namespace refused" | tee $out
+        '';
+
         # `nix flake check` only shape-checks an overlay. This applies
         # overlays.default to a fresh nixpkgs, builds every listed package
         # through it, and asserts each out path equals the direct package.
