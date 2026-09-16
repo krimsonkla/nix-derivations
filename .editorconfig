@@ -1,0 +1,7 @@
+# Clojure is two-space indented by convention, and the babashka entry scripts
+# here follow it. Without this section eclint applies a four-space default and
+# reports every idiomatic form as a violation -- including the require-all.clj
+# that predates this file.
+[*.clj]
+indent_style = space
+indent_size = 2

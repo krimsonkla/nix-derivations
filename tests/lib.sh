@@ -55,3 +55,21 @@ enumerate_revs() {
   git -C "$root" grep -hoE '(^|[^A-Za-z_])rev[[:space:]]*=[[:space:]]*"[^"]*"' -- 'pkgs/by-name/*/*/*.nix' \
     | sed -E 's#.*rev[[:space:]]*=[[:space:]]*"([^"]*)"#\1#' | sort -u
 }
+
+# Package EXPRESSIONS, the files the no-embedded-shell guard governs: the
+# packages under by-name and the isolation fixtures, which are package
+# expressions too and would otherwise be where the rule quietly stops
+# applying. flake.nix and lib/ are not governed; they hold the check
+# derivations and the family table, not package declarations.
+list_package_expressions() {
+  local root
+  root=$(repo_root)
+  git -C "$root" ls-files -- 'pkgs/by-name/*/*/package.nix' 'tests/fixtures/isolation/*/package.nix' | sort
+}
+
+# The scripts a package expression names, as "<expression> <script>" rows.
+list_package_scripts() {
+  local root
+  root=$(repo_root)
+  git -C "$root" ls-files -- 'pkgs/by-name/*/*/scripts/*.sh' 'tests/fixtures/isolation/*/scripts/*.sh' | sort
+}

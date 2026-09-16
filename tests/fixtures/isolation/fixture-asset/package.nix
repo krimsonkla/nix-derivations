@@ -6,8 +6,4 @@ runCommand "fixture-asset" {
     kind = "asset";
     files = ["refs/main" "blobs/0000"];
   };
-} ''
-  mkdir -p $out/refs $out/blobs
-  echo 0000 > $out/refs/main
-  echo data > $out/blobs/0000
-''
+} "source ${./scripts/build.sh}"

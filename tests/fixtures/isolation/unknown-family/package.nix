@@ -9,10 +9,8 @@ stdenvNoCC.mkDerivation {
   version = "0";
   dontUnpack = true;
   nativeBuildInputs = [makeWrapper];
-  installPhase = ''
-    mkdir -p $out/bin
-    makeWrapper ${lua}/bin/lua $out/bin/unknown-family --add-flags "-e 'print(1)'"
-  '';
+  luaExe = "${lua}/bin/lua";
+  installPhase = "source ${./scripts/install.sh}";
   passthru = {
     kind = "cli";
     bins = ["unknown-family"];

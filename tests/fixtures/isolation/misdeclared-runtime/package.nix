@@ -10,10 +10,8 @@ stdenvNoCC.mkDerivation {
   version = "0";
   dontUnpack = true;
   nativeBuildInputs = [makeWrapper];
-  installPhase = ''
-    mkdir -p $out/bin
-    makeWrapper ${babashka}/bin/bb $out/bin/misdeclared-runtime --add-flags "-e '(println \"ok\")'"
-  '';
+  bbExe = "${babashka}/bin/bb";
+  installPhase = "source ${./scripts/install.sh}";
   passthru = {
     kind = "cli";
     bins = ["misdeclared-runtime"];
