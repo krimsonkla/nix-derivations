@@ -5,3 +5,10 @@
 [*.clj]
 indent_style = space
 indent_size = 2
+
+# Shell here is two-space indented. Declared rather than left to eclint's
+# per-file inference, which read the same continuation line as 4 in one script
+# and 2 in another once its surrounding lines changed.
+[*.sh]
+indent_style = space
+indent_size = 2

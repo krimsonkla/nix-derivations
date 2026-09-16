@@ -6,7 +6,7 @@ type: task
 priority: 2
 mode: hitl
 created: '2026-09-16T00:18:46.774817Z'
-updated: '2026-09-16T05:28:18.820732Z'
+updated: '2026-09-16T05:35:17.774050Z'
 closed: '2026-09-16T05:28:05.139277Z'
 assignee: ''
 ---
@@ -74,3 +74,13 @@ Verified: bats tests/ 34/34 and both commits plus the push through dev-gate at G
 Two findings recorded rather than papered over. clojure-mcp-light stays out of scope because all three entry files call babashka.deps/add-deps at load time, which needs Maven and fails in a sandbox; an earlier plan had called it packageable on the strength of a run that was silently resolving against a warm ~/.m2. And of the two variables the babashka family scrubs, only BABASHKA_PRELOADS is load-bearing for wrappers shaped like these, since bb lets an explicit --classpath beat BABASHKA_CLASSPATH and --config beat the working directory's bb.edn, which makes the hostile fixture's hijack namespaces inert for knot as much as for clj-surgeon. The package README says so.
 
 Closed while the PR is still draft and unreviewed, at the developer's instruction, so the archive move ships in the same branch. Review feedback reopens this rather than landing silently.
+
+**2026-09-16T05:35:17.774050Z**
+
+Correction to the closing note above: the macos-latest CI lane failed on this work, and the closing claim of a green build was true only of the machine it was run on.
+
+The install check's :ls assertion went through clj-surgeon's clj-kondo admission gate, which sheds load -- it divides the one-minute load average by the logical CPU count and defers admission at 4.0. A GitHub aarch64-darwin runner has about three cores and nix flake check builds in parallel, so the ratio cleared the threshold and the gate returned :status :pressure-deferred, which the tool reports as "Forward-reference analyzer authority is unavailable". The same derivation hash passed locally only because fourteen cores held the ratio at 1.27.
+
+That is a defect in the check rather than in CI: a nix build must reach the same verdict wherever it runs, and this one was reading the builder's load average. Fixed by pinning CLJ_SURGEON_CLJ_KONDO_MAX_NORMALIZED_LOAD out of reach for the check and pointing CLJ_SURGEON_PRESSURE_STATUS at a path that does not exist, so neither ambient load nor a developer's real pressure monitor can decide a build. Load-shedding stays live for a consumer, which is who it is for. The refusal grep now also names pressure-deferred, so this failure mode reports itself instead of reading as a generic unavailable gate.
+
+Verified by sabotage as well as by a green run: lowering the ceiling to 0.01 turns the build red naming :clj-kondo-pressure-deferred, which proves the variable reaches the gate rather than merely being set.

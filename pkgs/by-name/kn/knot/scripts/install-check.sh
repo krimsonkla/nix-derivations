@@ -27,7 +27,7 @@ cp=$out/lib/knot/src:$out/lib/knot/resources
 floor=$("$bbExe" -e "(-> \"$cfg\" slurp clojure.edn/read-string :min-bb-version println)")
 have=$("$bbExe" --version | sed -E 's/^babashka v//')
 "$bbExe" -e "(let [v (fn [s] (mapv parse-long (clojure.string/split s #\"\\.\")))]
-               (when (neg? (compare (v \"$have\") (v \"$floor\"))) (System/exit 1)))" \
+  (when (neg? (compare (v \"$have\") (v \"$floor\"))) (System/exit 1)))" \
   || { echo "babashka $have is below the floor $floor"; exit 1; }
 echo "babashka floor: $have >= $floor"
 

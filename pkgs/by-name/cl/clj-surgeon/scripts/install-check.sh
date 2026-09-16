@@ -34,7 +34,7 @@ floor=$("$bbExe" -e "(println (or (-> \"$cfg\" slurp clojure.edn/read-string :mi
 have=$("$bbExe" --version | sed -E 's/^babashka v//')
 if [ -n "$floor" ]; then
   "$bbExe" -e "(let [v (fn [s] (mapv parse-long (clojure.string/split s #\"\\.\")))]
-                 (when (neg? (compare (v \"$have\") (v \"$floor\"))) (System/exit 1)))" \
+  (when (neg? (compare (v \"$have\") (v \"$floor\"))) (System/exit 1)))" \
     || { echo "babashka $have is below the floor $floor"; exit 1; }
   echo "babashka floor: $have >= $floor"
 else
@@ -74,17 +74,29 @@ grep -q ':operation :show-form' <<<"$cat_out" \
 # and the gate would report :delegated forever. These name writable paths for
 # the check only; they are a consumer's own per-user state and the wrapper
 # deliberately does not set them.
+#
+# The gate also sheds load: it divides the one-minute load average by the CPU
+# count and defers admission at 4.0, and it reads an external pressure monitor's
+# status file if one exists. Both are right for an interactive tool and wrong
+# for a build, which must reach the same verdict on a busy three-core runner as
+# on an idle workstation -- this check failed in CI and passed here for no
+# reason but core count. The ceiling is therefore raised out of reach and the
+# monitor pointed at a path that does not exist, so what is asserted below is
+# the wiring, never the machine the build landed on. Load-shedding stays live
+# for a consumer, which is who it is for.
 state=$(mktemp -d)
 gate_state=(
   "CLJ_SURGEON_CLJ_KONDO_LOCK=$state/clj-kondo.lock"
   "CLJ_SURGEON_CLJ_KONDO_PRIORITY_LOCK=$state/clj-kondo-priority.lock"
   "CLJ_SURGEON_CLJ_KONDO_EVENTS=$state/clj-kondo-events.jsonl"
+  "CLJ_SURGEON_PRESSURE_STATUS=$state/pressure-status.json"
+  "CLJ_SURGEON_CLJ_KONDO_MAX_NORMALIZED_LOAD=1000000"
 )
 if ! ls_out=$("${clean[@]}" "${gate_state[@]}" clj-surgeon :op :ls :file "$subject" 2>&1); then
   echo "clj-surgeon :ls failed: $ls_out"
   exit 1
 fi
-if grep -q 'admission-unavailable' <<<"$ls_out"; then
+if grep -qE 'admission-unavailable|pressure-deferred' <<<"$ls_out"; then
   echo "clj-surgeon :ls refused the admission gate: $ls_out"
   exit 1
 fi
