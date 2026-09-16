@@ -49,8 +49,24 @@ The script ships inside the pinned source, so it costs no second fetch and no
 second registry row; its `#!/usr/bin/env python3` shebang is patched to a store
 path. `ripgrep` and `grep` are both on the closed `PATH` the wrapper sets,
 because the search ops prefer `rg` and warn on stderr when falling back. The
-install check exercises both sides: `:cat` bare, and `:ls` through the wrapper
-asserting it does not report the unavailable gate.
+install check exercises `:cat` bare, and asserts directly that everything the
+wrapper owes the gate is in place: the wrapper names the admission script, that
+script is executable, its shebang was patched to a store path and that
+interpreter loads what the script imports, and `clj-kondo`, `rg` and `grep` all
+resolve on the closed `PATH`.
+
+It does **not** run a forward-reference op end to end, and that is a property of
+the build environment rather than a gap left casually. Resolving the analyzer
+canonicalizes `<user.home>/bin/clj-kondo` before it resolves anything, and
+babashka is a native image that reads `user.home` from the passwd entry rather
+than `$HOME` — the same property that makes an `env -i` run on a developer
+machine prove nothing about hermeticity. Inside a sandbox that call reaches for
+the real user's home, which the darwin sandbox refuses:
+`java.io.UnixFileSystem.canonicalize0` throws `Operation not permitted`, and the
+tool surfaces that as an unavailable gate. No variable redirects `user.home`. A
+consumer's first forward-reference op is where the whole chain runs; an
+end-to-end assertion restored here will go red on any sandboxed darwin builder,
+which is what CI is.
 
 Limits: the namespace check catches what a namespace requires at load time, not
 a library pulled in dynamically inside a function.

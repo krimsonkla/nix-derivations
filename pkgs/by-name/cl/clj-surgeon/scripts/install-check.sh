@@ -15,6 +15,7 @@ runHook preInstallCheck
 
 HOME=$(mktemp -d)
 export HOME
+scratch=$(mktemp -d)
 cfg=$out/lib/clj-surgeon/bb.edn
 cp=$out/lib/clj-surgeon/src:$out/lib/clj-surgeon/resources
 
@@ -44,7 +45,15 @@ fi
 # The command a consumer's shell is promised, under an empty environment: a
 # wrapper that only works while the build's own variables (out, src) are set
 # must fail here, not in a consumer.
-clean=(env -i "HOME=$HOME" "PATH=$out/bin")
+# TMPDIR travels with HOME and PATH. env -i exists here to prove the wrapper
+# needs none of the BUILD's variables -- $out, $src -- not to deny the command a
+# usable process environment, and the ops that spawn the analyzer stage its
+# output through java.io.File/createTempFile. Without TMPDIR that falls back to
+# /tmp, which is writable on an unsandboxed builder and not inside the sandbox,
+# so the temp file throws a plain IOException that surfaces as an unavailable
+# gate with no cause attached. That is why this check passed locally and failed
+# on CI: sandbox = false here, sandbox = true there.
+clean=(env -i "HOME=$HOME" "PATH=$out/bin" "TMPDIR=$scratch")
 # $version is the derivation's own attribute, so the tool's self-report and
 # the packaged version cannot drift apart silently.
 if ! reported=$("${clean[@]}" clj-surgeon --version 2>&1); then
@@ -75,34 +84,44 @@ grep -q ':operation :show-form' <<<"$cat_out" \
 # the check only; they are a consumer's own per-user state and the wrapper
 # deliberately does not set them.
 #
-# The gate also sheds load: it divides the one-minute load average by the CPU
-# count and defers admission at 4.0, and it reads an external pressure monitor's
-# status file if one exists. Both are right for an interactive tool and wrong
-# for a build, which must reach the same verdict on a busy three-core runner as
-# on an idle workstation -- this check failed in CI and passed here for no
-# reason but core count. The ceiling is therefore raised out of reach and the
-# monitor pointed at a path that does not exist, so what is asserted below is
-# the wiring, never the machine the build landed on. Load-shedding stays live
-# for a consumer, which is who it is for.
-state=$(mktemp -d)
-gate_state=(
-  "CLJ_SURGEON_CLJ_KONDO_LOCK=$state/clj-kondo.lock"
-  "CLJ_SURGEON_CLJ_KONDO_PRIORITY_LOCK=$state/clj-kondo-priority.lock"
-  "CLJ_SURGEON_CLJ_KONDO_EVENTS=$state/clj-kondo-events.jsonl"
-  "CLJ_SURGEON_PRESSURE_STATUS=$state/pressure-status.json"
-  "CLJ_SURGEON_CLJ_KONDO_MAX_NORMALIZED_LOAD=1000000"
-)
-if ! ls_out=$("${clean[@]}" "${gate_state[@]}" clj-surgeon :op :ls :file "$subject" 2>&1); then
-  echo "clj-surgeon :ls failed: $ls_out"
-  exit 1
-fi
-if grep -qE 'admission-unavailable|pressure-deferred' <<<"$ls_out"; then
-  echo "clj-surgeon :ls refused the admission gate: $ls_out"
-  exit 1
-fi
-grep -q ':ns clj-surgeon.forms' <<<"$ls_out" \
-  || { echo "clj-surgeon :ls printed: $ls_out"; exit 1; }
-echo "admission: :cat runs bare, :ls reaches clj-kondo through the wrapper"
+# What the wrapper contributes to the admission gate, asserted directly rather
+# than by running it. The gate itself cannot be exercised here: resolving the
+# analyzer canonicalizes <user.home>/bin/clj-kondo before it resolves anything,
+# and babashka is a native image that reads user.home from the passwd entry
+# rather than $HOME, so inside the sandbox that call reaches for the real user's
+# home and the darwin sandbox refuses it --
+# java.io.UnixFileSystem.canonicalize0 throws "Operation not permitted" and the
+# tool reports an unavailable gate. No variable redirects user.home, so this is
+# a property of the build environment, not of the package. A consumer's first
+# forward-reference op is where the whole chain runs; what is checkable here is
+# that everything the wrapper is responsible for is in place, which is what
+# these three assertions cover.
+admission=$out/lib/clj-surgeon/resources/clj-kondo-admission.py
+wrapper_admission=$(grep -oE "^export CLJ_SURGEON_CLJ_KONDO_ADMISSION='[^']+'" "$out/bin/clj-surgeon" \
+  | sed "s/^export CLJ_SURGEON_CLJ_KONDO_ADMISSION='//; s/'$//")
+[ "$wrapper_admission" = "$admission" ] \
+  || { echo "the wrapper names '$wrapper_admission' as the admission gate, not $admission"; exit 1; }
+[ -x "$admission" ] \
+  || { echo "the admission gate is not executable: $admission"; exit 1; }
+admission_interpreter=$(head -n 1 "$admission" | sed 's|^#!||')
+case "$admission_interpreter" in
+  /nix/store/*) ;;
+  *)
+    echo "the admission gate's interpreter was not patched to a store path: $admission_interpreter"
+    exit 1
+    ;;
+esac
+"$admission_interpreter" -c 'import fcntl, json, os' \
+  || { echo "the admission gate's interpreter cannot load what it imports"; exit 1; }
+
+# The executables the gate execs, on the closed PATH the wrapper sets.
+wrapper_path=$(grep -oE "^export PATH='[^']+'" "$out/bin/clj-surgeon" | sed "s/^export PATH='//; s/'$//")
+for exe in clj-kondo rg grep; do
+  found=$(PATH="$wrapper_path" command -v "$exe") \
+    || { echo "$exe does not resolve on the wrapper's PATH: $wrapper_path"; exit 1; }
+  [ -x "$found" ] || { echo "$exe resolves to something not executable: $found"; exit 1; }
+done
+echo "admission: :cat runs bare; the gate, its interpreter and clj-kondo, rg and grep all reach the wrapper"
 
 # Isolation: the same commands from a directory holding a hostile bb.edn and
 # under the variables babashka honours, byte-identical, no marker. The hostile

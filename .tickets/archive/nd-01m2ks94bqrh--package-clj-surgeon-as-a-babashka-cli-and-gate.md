@@ -6,7 +6,7 @@ type: task
 priority: 2
 mode: hitl
 created: '2026-09-16T00:18:46.774817Z'
-updated: '2026-09-16T05:35:17.774050Z'
+updated: '2026-09-16T05:51:02.808594Z'
 closed: '2026-09-16T05:28:05.139277Z'
 assignee: ''
 ---
@@ -84,3 +84,17 @@ The install check's :ls assertion went through clj-surgeon's clj-kondo admission
 That is a defect in the check rather than in CI: a nix build must reach the same verdict wherever it runs, and this one was reading the builder's load average. Fixed by pinning CLJ_SURGEON_CLJ_KONDO_MAX_NORMALIZED_LOAD out of reach for the check and pointing CLJ_SURGEON_PRESSURE_STATUS at a path that does not exist, so neither ambient load nor a developer's real pressure monitor can decide a build. Load-shedding stays live for a consumer, which is who it is for. The refusal grep now also names pressure-deferred, so this failure mode reports itself instead of reading as a generic unavailable gate.
 
 Verified by sabotage as well as by a green run: lowering the ceiling to 0.01 turns the build red naming :clj-kondo-pressure-deferred, which proves the variable reaches the gate rather than merely being set.
+
+**2026-09-16T05:51:02.808594Z**
+
+Second correction. The pressure fix in the previous note was wrong about the cause, and the macos lane failed again on the same error.
+
+The tell was there and I read past it: the CI error prints a three-key map with :cause-error-type nil, while the pressure path prints a large :admission map carrying :status :pressure-deferred. Different code paths. I had a hypothesis that explained where it failed, on a small runner, and never checked it against the shape of what failed.
+
+The real cause, from a stack trace taken inside a sandboxed build rather than guessed at: resolving the analyzer calls getCanonicalPath on <user.home>/bin/clj-kondo before it resolves anything, and babashka is a native image that reads user.home from the passwd entry rather than $HOME -- the same property that invalidated the original plan's env -i test. Inside the sandbox that canonicalize reaches for the real user's home, the darwin sandbox refuses it, and java.io.UnixFileSystem.canonicalize0 throws "Operation not permitted", which the tool reports as an unavailable gate. No variable redirects user.home, so no packaging change makes the end-to-end op runnable there.
+
+Why it passed locally at all: this machine has sandbox = false, which nix ships as the darwin default. Every "verified in the sandbox" claim made for this package before now was made on an unsandboxed builder. nix flake check --option sandbox true now passes, which is the first time that claim has been true.
+
+The install check no longer runs a forward-reference op. It asserts what the wrapper is actually responsible for: that the wrapper names the admission script, that the script is executable, that its shebang was patched to a store path and that interpreter loads what the script imports, and that clj-kondo, rg and grep all resolve on the closed PATH. Proven non-vacuous by sabotage -- dropping gnugrep from the wrapper turns the build red naming grep. The README records why the end-to-end assertion cannot come back, so nobody restores it and rediscovers this.
+
+CONTRIBUTING now tells a darwin developer to pass --option sandbox true, since the local default silently differs from every CI lane.

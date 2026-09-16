@@ -114,4 +114,7 @@ package-list guard:
 4. If the attribute path of any hash changed, update its row in
    `tests/hash-registry.txt`.
 5. Update the `## Pinned rev` line in the package README.
-6. Run `bats tests/` and `nix flake check`.
+6. Run `bats tests/` and `nix flake check`. On darwin pass
+   `--option sandbox true`: nix ships `sandbox = false` there, so a local check
+   runs unsandboxed while every CI lane runs sandboxed, and a build that reaches
+   outside the sandbox passes locally and fails in CI.
