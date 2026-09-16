@@ -43,9 +43,11 @@ does. Read them before touching `pkgs/` or `tests/`.
     word.
 12. Every package is one of three kinds, declared in `pkgs/default.nix` and in
     `passthru.kind`. A `cli` owns exactly the commands `passthru.bins` names,
-    propagates nothing, and has a private runtime: its wrapper is built with
-    `lib/isolation.nix`'s `wrapIsolated`, which unsets every variable the
-    runtime family honours, its `passthru.runtime` names that family, and its
+    propagates nothing, and has a private runtime: its wrapper is built by
+    `lib/scripts/wrap-isolated.sh` from the scrub list `lib/isolation.nix`
+    exports, so that every variable the runtime family honours is unset and
+    no package carries a copy of the list; its `passthru.runtime` names that
+    family, and its
     `passthru.smoke` vectors must print the same bytes from a hostile
     directory and environment. The guard does not take the family on trust:
     it follows each command to the interpreter it execs and fails by name
@@ -64,12 +66,24 @@ does. Read them before touching `pkgs/` or `tests/`.
     appearing at all. A consumer's
     shell composes layers on their own language versions; a package that
     leaks its runtime onto PATH breaks that composition.
+13. A package expression declares a package; it does not carry the shell that
+    builds one. Every phase is exactly `source ${./scripts/<name>.sh}` and the
+    script lives in the expression's own `scripts/` directory, with a
+    `#!/usr/bin/env bash` first line. Shell in a Nix string is shell no
+    linter reads, no editor highlights and no reviewer can quote-check,
+    because what bash finally sees is what survived Nix string escaping
+    first; an array of hostile environment variables is the case that
+    proves it. This governs package expressions — those under `pkgs/by-name/`
+    and the isolation fixtures, which are package expressions too. It does
+    not govern `flake.nix` or `lib/`, which hold the check derivations and
+    the family table rather than package declarations.
 
 Enforcement map: 1 and 2 by the well-formedness test in `tests/hash-registry.bats`;
 3 by `sandbox = true` in every CI lane; 5 by `tests/package-list.bats`; 6 by the
 count pins in both guards; 9 by the registry enumeration test's set equality;
 10 by `tests/named-labels.bats`; 11 by `tests/inventory.bats`, which pins the
 scanner's counts (the allowlist that rejects a fifth word is a consumer's own);
+13 by `tests/nix-scripts.bats`, which pins the expression and script counts;
 12 by `tests/isolation.bats`
 with the standing reds `isolation-red-leak`, `isolation-red-unkinded`,
 `isolation-red-missing-subject`, `isolation-red-misdeclared-runtime`,
@@ -100,4 +114,7 @@ package-list guard:
 4. If the attribute path of any hash changed, update its row in
    `tests/hash-registry.txt`.
 5. Update the `## Pinned rev` line in the package README.
-6. Run `bats tests/` and `nix flake check`.
+6. Run `bats tests/` and `nix flake check`. On darwin pass
+   `--option sandbox true`: nix ships `sandbox = false` there, so a local check
+   runs unsandboxed while every CI lane runs sandboxed, and a build that reaches
+   outside the sandbox passes locally and fails in CI.

@@ -1,3 +1,4 @@
 # One row per hash-bearing attribute under pkgs/. Whitespace separated.
 # pkg            attr        kind      source
+clj-surgeon      hash        fetch     fetchFromGitHub
 knot             hash        fetch     fetchFromGitHub

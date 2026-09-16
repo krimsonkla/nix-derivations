@@ -3,3 +3,10 @@ result-*
 .direnv/
 .pre-commit-config.yaml
 .idea/
+.mcp.json
+.devenv/
+.claude/
+.cache/
+/secrets.yaml
+/.sops.yaml
+devenv.*

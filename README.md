@@ -68,7 +68,9 @@ decision; it is not accommodated silently.
 
 Read `CONTRIBUTING.md`. One directory at `pkgs/by-name/<xy>/<name>/`, one
 entry in `pkgs/default.nix`, one row per captured hash in `tests/hash-registry.txt`, and
-a README with the five required headings. Every package declares its kind: a
+a README with the five required headings. A package expression carries no
+shell: every phase is `source ${./scripts/<name>.sh}` and the script lives
+beside the expression, which `tests/nix-scripts.bats` enforces. Every package declares its kind: a
 `cli` with a private runtime, a `library` inside its language set, or an
 `asset` consumed by path; `tests/isolation.bats` verifies all three, and refuses a runtime family its table
 does not know. The guards under `tests/` enforce the shape, and `tests/named-labels.bats` keeps every label named after its subject

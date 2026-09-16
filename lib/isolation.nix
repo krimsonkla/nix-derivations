@@ -80,20 +80,13 @@
     };
   };
 
-  # The makeWrapper invocation for a cli of one family: every variable the
-  # family honours is unset before the interpreter starts. `flags` is the
-  # --add-flags string, double-quoted so `$out` expands at install time (a
-  # single-quoted string bakes the literal, which only works while the
-  # build environment still defines it); `exe` the interpreter path; `name`
-  # the command.
-  wrapIsolated = {
-    family,
-    exe,
-    name,
-    flags,
-  }: let
-    unsets = lib.concatMapStringsSep " " (v: "--unset ${v}") families.${family}.scrub;
-  in "makeWrapper ${exe} $out/bin/${name} ${unsets} --add-flags \"${flags}\"";
+  # The wrapper itself is built by lib/scripts/wrap-isolated.sh, in the build
+  # shell rather than here: a package expression carries no shell of its own,
+  # so the makeWrapper call cannot be written in Nix. What crosses is data —
+  # a package exports its family's `scrub` list below, and the shell half
+  # spends it. The two must stay one table: a package that copied the list
+  # would drift from the guard's, which is the failure the family table
+  # exists to prevent.
 
   # Family of a library from its declared set, or null.
   familyOfSet = set: let

@@ -11,23 +11,45 @@
 # named failure, never a pass. Counts are reported and pinned; ISOLATION_PINS
 # overrides them for the fixture runs, and the report says which was used.
 
+# Evaluating the manifest applies the overlay to a whole second nixpkgs, and a
+# dirty git tree disables Nix's evaluation cache, so it costs seconds every
+# time it is asked for. It is asked for once per FILE here rather than once per
+# test, because bats runs setup() before each of them: the same work repeated
+# per test was the whole runtime of this guard. Inside a check derivation the
+# guard exports both values and nothing is evaluated here at all.
+setup_file() {
+  load lib.sh
+  if [[ -n "${ISOLATION_MANIFEST:-}" ]]; then
+    return 0
+  fi
+  local root system
+  root=$(repo_root)
+  system=$(nix eval --raw --impure --expr builtins.currentSystem)
+  # One invocation for every declared package: each nix call re-evaluates the
+  # flake, so building them in a loop pays that evaluation per package.
+  local -a attrs=()
+  local p
+  for p in $(list_declared_packages); do attrs+=("$root#packages.$system.$p"); done
+  nix build --no-link "${attrs[@]}"
+  nix eval --json "$root#lib.isolationManifest.$system" >"$BATS_FILE_TMPDIR/manifest.json"
+  nix eval --json "$root#lib.isolationFamilies" >"$BATS_FILE_TMPDIR/families.json"
+}
+
 setup() {
   load lib.sh
   # shellcheck disable=SC1091 # sibling data file, resolved through repo_root at runtime
   source "$(repo_root)/tests/isolation-hostile.bash"
   ROOT=$(repo_root)
   if [[ -z "${ISOLATION_MANIFEST:-}" ]]; then
-    system=$(nix eval --raw --impure --expr builtins.currentSystem)
-    for p in $(list_declared_packages); do nix build --no-link "$ROOT#packages.$system.$p"; done
-    ISOLATION_MANIFEST=$(nix eval --json "$ROOT#lib.isolationManifest.$system")
-    FAMILIES=$(nix eval --json "$ROOT#lib.isolationFamilies")
+    ISOLATION_MANIFEST=$(cat "$BATS_FILE_TMPDIR/manifest.json")
+    FAMILIES=$(cat "$BATS_FILE_TMPDIR/families.json")
   fi
   export ISOLATION_MANIFEST FAMILIES
   if [[ -n "${ISOLATION_PINS:-}" ]]; then
     IFS=' ' read -r PIN_N PIN_C PIN_L PIN_A PIN_F PIN_S <<<"$ISOLATION_PINS"
     PIN_SOURCE="ISOLATION_PINS override"
   else
-    IFS=' ' read -r PIN_N PIN_C PIN_L PIN_A PIN_F PIN_S <<<"1 1 0 0 9 2"
+    IFS=' ' read -r PIN_N PIN_C PIN_L PIN_A PIN_F PIN_S <<<"2 2 0 0 9 3"
     PIN_SOURCE="default"
   fi
   TEST_TMPDIR=$(mktemp -d -p "${BATS_TEST_TMPDIR:?BATS_TEST_TMPDIR unset}")

@@ -11,11 +11,8 @@ stdenvNoCC.mkDerivation {
   version = "0";
   dontUnpack = true;
   nativeBuildInputs = [makeWrapper];
-  installPhase = ''
-    mkdir -p $out/bin $out/lib
-    printf '%s\n' 'import sys' 'print("ok", len(sys.argv) - 1)' > $out/lib/main.py
-    makeWrapper ${python3}/bin/python3 $out/bin/python-leak --add-flags "$out/lib/main.py"
-  '';
+  pythonExe = "${python3}/bin/python3";
+  installPhase = "source ${./scripts/install.sh}";
   passthru = {
     kind = "cli";
     bins = ["python-leak"];

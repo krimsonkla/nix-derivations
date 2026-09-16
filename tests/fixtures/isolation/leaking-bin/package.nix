@@ -7,11 +7,8 @@ stdenvNoCC.mkDerivation {
   pname = "leaking-bin";
   version = "0";
   dontUnpack = true;
-  installPhase = ''
-    mkdir -p $out/bin
-    ln -s ${babashka}/bin/bb $out/bin/bb
-    printf '#!/bin/sh\necho ok\n' > $out/bin/leaking-bin && chmod +x $out/bin/leaking-bin
-  '';
+  bbExe = "${babashka}/bin/bb";
+  installPhase = "source ${./scripts/install.sh}";
   passthru = {
     kind = "cli";
     bins = ["leaking-bin"];
