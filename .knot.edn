@@ -1,0 +1,16 @@
+;; Knot project config. Every key here is optional; these are the values this
+;; project relies on rather than the full schema. `knot info` reports what is
+;; in effect.
+{
+    :project-name "nix-derivations"
+    :tickets-dir ".tickets"
+    :default-type "task"
+    :default-priority 2
+    :statuses ["open" "in_progress" "closed"]
+    :terminal-statuses #{"closed"}
+    :active-status "in_progress"
+    :types ["bug" "feature" "task" "epic" "chore"]
+    :modes ["afk" "hitl"]
+    :default-mode "hitl"
+    :afk-mode "afk"
+}
