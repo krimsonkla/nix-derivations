@@ -1,0 +1,21 @@
+# Version updates. These are driven by this file alone and do not depend on the
+# repository's Dependabot alerts setting.
+version: 2
+updates:
+  # Every action in check.yml, full-registry.yml and publish.yml is pinned to a
+  # commit sha. A sha never floats, which is the point -- and the cost is that
+  # nothing reports a newer one exists. This is what pays that cost.
+  #
+  # flake.lock is not covered: Dependabot has no Nix ecosystem, so the flake
+  # inputs stay on `nix flake update`.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Sit out a newly published version for a week. A release compromised at
+    # source looks exactly like a legitimate one on day zero; most are caught
+    # and yanked well inside seven days.
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(ci)"
