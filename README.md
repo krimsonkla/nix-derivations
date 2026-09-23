@@ -129,9 +129,11 @@ deck.
   on its own side.
 - Conventions 4, 7 and 8 in `CONTRIBUTING.md` are written-only; nothing
   enforces them.
-- The lockfile half of the hash registry guard ships with zero rows on day one.
-  Its count pin is asserted at 0, and the first lockfile-kind package is where
-  that test first goes red and green.
+- The lockfile half of the hash registry guard carries one row, glci's
+  `vendorHash`. Verifying it re-derives the vendored modules with substitution
+  disabled, so a local run that substitutes proves the row is reachable rather
+  than that its contents still hash the same; `registry-diff` and
+  `full-registry` are the lanes that re-fetch it for real.
 - Branch protection on a single-maintainer repository cannot require a second
   approver. A private dev shell therefore trusts a cache writable through this
   repository's merge path, and the owner can bypass protection. The trust

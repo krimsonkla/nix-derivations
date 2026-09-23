@@ -9,6 +9,10 @@
 # library, the language set it extends. The guard in tests/isolation.bats
 # asserts these equal the package's own passthru declarations.
 {
+  glci = {
+    path = ./by-name/gl/glci/package.nix;
+    kind = "cli";
+  };
   clj-surgeon = {
     path = ./by-name/cl/clj-surgeon/package.nix;
     kind = "cli";
