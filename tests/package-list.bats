@@ -20,7 +20,7 @@ setup() { load lib.sh; }
 @test "package-list: count pin" {
   # Bump this literal when a package is added or removed. It is the half that
   # makes a silently shrunken enumeration red.
-  [ "$(list_declared_packages | grep -c .)" -eq 2 ]
+  [ "$(list_declared_packages | grep -c .)" -eq 3 ]
 }
 
 @test "package-list: every package README carries the five required headings" {
@@ -49,5 +49,5 @@ setup() { load lib.sh; }
     }
   done
   echo "package-list: $n packages placed and named by their upstream name"
-  [ "$n" -eq 2 ]
+  [ "$n" -eq 3 ]
 }
