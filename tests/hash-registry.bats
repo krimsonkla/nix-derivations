@@ -26,7 +26,7 @@ registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3,
 }
 
 @test "A: count pin" {
-  [ "$(registry_rows | grep -c .)" -eq 3 ]
+  [ "$(registry_rows | grep -c .)" -eq 5 ]
 }
 
 @test "B: lockfile rows verified" {
@@ -55,9 +55,10 @@ registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3,
 }
 
 @test "B: lockfile count pin" {
-  # Day one: zero lockfile rows. This literal is bumped by the first lockfile
-  # package (the npm migration), which is where Test B first goes red/green.
-  [ "$(registry_rows | awk '$3=="lockfile"' | grep -c . || true)" -eq 0 ]
+  # One row since glci, whose vendorHash is verified by re-deriving the
+  # vendored modules with substitution disabled. This literal moves with the
+  # lockfile-bearing packages, not with the packages.
+  [ "$(registry_rows | awk '$3=="lockfile"' | grep -c . || true)" -eq 1 ]
 }
 
 @test "C: every fetch row's package is a check attribute (reachability only)" {
@@ -86,12 +87,15 @@ registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3,
       return 1
     fi
   done
-  # Pin the rev enumeration to the registry: every fetchFromGitHub row carries
-  # exactly one rev, so an empty enumeration cannot pass this loop vacuously.
+  # Pin the rev enumeration to the registry: every row that fetches from a
+  # forge carries exactly one rev, whichever forge it is, so an empty
+  # enumeration cannot pass this loop vacuously. A fetcher missing from this
+  # awk makes its package's rev an unmatched extra, which is red rather than
+  # unnoticed.
   n_revs=$(enumerate_revs | grep -c . || true)
-  n_gh=$(registry_rows | awk '$3=="fetch" && $4=="fetchFromGitHub"' | grep -c . || true)
-  echo "hash-registry: $n_revs revs enumerated, $n_gh fetchFromGitHub rows"
-  [ "$n_revs" -eq "$n_gh" ]
+  n_pinned=$(registry_rows | awk '$3=="fetch" && ($4=="fetchFromGitHub" || $4=="fetchFromGitLab")' | grep -c . || true)
+  echo "hash-registry: $n_revs revs enumerated, $n_pinned forge-fetch rows"
+  [ "$n_revs" -eq "$n_pinned" ]
   for r in $(enumerate_revs); do
     [[ "$r" =~ ^[0-9a-f]{40}$ ]] || {
       echo "rev not a full sha: $r"
