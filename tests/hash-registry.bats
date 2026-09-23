@@ -26,7 +26,7 @@ registry_rows() { grep -vE '^[[:space:]]*(#|$)' "$REG" | awk '{print $1, $2, $3,
 }
 
 @test "A: count pin" {
-  [ "$(registry_rows | grep -c .)" -eq 2 ]
+  [ "$(registry_rows | grep -c .)" -eq 3 ]
 }
 
 @test "B: lockfile rows verified" {

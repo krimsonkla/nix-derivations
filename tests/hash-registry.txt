@@ -2,3 +2,4 @@
 # pkg            attr        kind      source
 clj-surgeon      hash        fetch     fetchFromGitHub
 knot             hash        fetch     fetchFromGitHub
+knotview         hash        fetch     fetchFromGitHub

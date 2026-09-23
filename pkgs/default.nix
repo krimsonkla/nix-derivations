@@ -17,4 +17,8 @@
     path = ./by-name/kn/knot/package.nix;
     kind = "cli";
   };
+  knotview = {
+    path = ./by-name/kn/knotview/package.nix;
+    kind = "cli";
+  };
 }

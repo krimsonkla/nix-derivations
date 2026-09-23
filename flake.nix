@@ -160,48 +160,48 @@
         # only when bats fails naming the fixture; the green (a trivial python
         # library) passes when the library branch is green with the fixture
         # counted, and proves the overlay places a library for real.
-        isolation-library-green = fixtureGuard "green" "fixture-lib" "3 2 1 0 9 3" {
+        isolation-library-green = fixtureGuard "green" "fixture-lib" "4 3 1 0 9 5" {
           path = ./tests/fixtures/isolation/fixture-lib/package.nix;
           kind = "library";
           set = "python3Packages";
         };
-        isolation-asset-green = fixtureGuard "green" "fixture-asset" "3 2 0 1 9 3" {
+        isolation-asset-green = fixtureGuard "green" "fixture-asset" "4 3 0 1 9 5" {
           path = ./tests/fixtures/isolation/fixture-asset/package.nix;
           kind = "asset";
         };
-        isolation-red-asset-bin = fixtureGuard "red" "asset-with-bin" "3 2 0 1 9 3" {
+        isolation-red-asset-bin = fixtureGuard "red" "asset-with-bin" "4 3 0 1 9 5" {
           path = ./tests/fixtures/isolation/asset-with-bin/package.nix;
           kind = "asset";
         };
-        isolation-python-green = fixtureGuard "green" "python-cli" "3 3 0 0 9 4" {
+        isolation-python-green = fixtureGuard "green" "python-cli" "4 4 0 0 9 6" {
           path = ./tests/fixtures/isolation/python-cli/package.nix;
           kind = "cli";
         };
-        isolation-red-python-leak = fixtureGuard "red" "python-leak" "3 3 0 0 9 4" {
+        isolation-red-python-leak = fixtureGuard "red" "python-leak" "4 4 0 0 9 6" {
           path = ./tests/fixtures/isolation/python-leak/package.nix;
           kind = "cli";
         };
-        isolation-red-leak = fixtureGuard "red" "leaking-bin" "3 3 0 0 9 4" {
+        isolation-red-leak = fixtureGuard "red" "leaking-bin" "4 4 0 0 9 6" {
           path = ./tests/fixtures/isolation/leaking-bin/package.nix;
           kind = "cli";
         };
-        isolation-red-unkinded = fixtureGuard "red" "unkinded" "3 3 0 0 9 4" {
+        isolation-red-unkinded = fixtureGuard "red" "unkinded" "4 4 0 0 9 6" {
           path = ./tests/fixtures/isolation/unkinded/package.nix;
           kind = "cli";
         };
-        isolation-red-missing-subject = fixtureGuard "red" "missing-subject" "3 3 0 0 9 4" {
+        isolation-red-missing-subject = fixtureGuard "red" "missing-subject" "4 4 0 0 9 6" {
           path = ./tests/fixtures/isolation/missing-subject/package.nix;
           kind = "cli";
         };
-        isolation-red-misdeclared-runtime = fixtureGuard "red" "misdeclared-runtime" "3 3 0 0 9 4" {
+        isolation-red-misdeclared-runtime = fixtureGuard "red" "misdeclared-runtime" "4 4 0 0 9 6" {
           path = ./tests/fixtures/isolation/misdeclared-runtime/package.nix;
           kind = "cli";
         };
-        isolation-red-unknown-family = fixtureGuard "red" "unknown-family" "3 3 0 0 9 4" {
+        isolation-red-unknown-family = fixtureGuard "red" "unknown-family" "4 4 0 0 9 6" {
           path = ./tests/fixtures/isolation/unknown-family/package.nix;
           kind = "cli";
         };
-        isolation-red-wrong-set = fixtureGuard "red" "wrong-set" "3 2 1 0 9 3" {
+        isolation-red-wrong-set = fixtureGuard "red" "wrong-set" "4 3 1 0 9 5" {
           path = ./tests/fixtures/isolation/wrong-set/package.nix;
           kind = "library";
           set = "python3Packages";
