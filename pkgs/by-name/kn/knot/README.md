@@ -6,7 +6,7 @@ https://github.com/UniSoma/knot (MIT)
 
 ## Pinned rev
 
-5c2a42062e94809b1a51df372cab78f9f750fe52 (tag v0.12.0)
+9956d45f8297c0eb3a0f1650fcbb5397ea70e408 (tag v0.15.0)
 
 ## Why here, not nixpkgs
 
