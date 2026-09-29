@@ -7,12 +7,12 @@
 }:
 stdenvNoCC.mkDerivation {
   pname = "knot";
-  version = "0.12.0";
+  version = "0.15.0";
   src = fetchFromGitHub {
     owner = "UniSoma";
     repo = "knot";
-    rev = "5c2a42062e94809b1a51df372cab78f9f750fe52";
-    hash = "sha256-/cCMX281CeW67ioESvtTdTc7oSoGgc7BkLPZAqkKhBo=";
+    rev = "9956d45f8297c0eb3a0f1650fcbb5397ea70e408";
+    hash = "sha256-BYY5vQd48wMOHSEep3dVJCH/mI8+XNd3IPfrARDtiKA=";
   };
   patches = [];
   nativeBuildInputs = [makeWrapper babashka];
