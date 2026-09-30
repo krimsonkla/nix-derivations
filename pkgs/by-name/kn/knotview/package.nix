@@ -21,8 +21,8 @@ in
     src = fetchFromGitHub {
       owner = "krimsonkla";
       repo = "knotview";
-      rev = "b765e2cb449d36063a0403a483e0004611f53b9b";
-      hash = "sha256-EbUf67eJTWyCjpTw1s8hJLXIeKE0u5IGOz9G49g7EuU=";
+      rev = "ca5cb6466906da5a6933100077e387afa031933e";
+      hash = "sha256-BDrnmmFhiu6HSBJcrOcREvxT7m68wn8y69z+Zt4tt/c=";
     };
     patches = [];
     nativeBuildInputs = [makeWrapper];
