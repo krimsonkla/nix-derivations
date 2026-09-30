@@ -49,7 +49,7 @@ setup() {
     IFS=' ' read -r PIN_N PIN_C PIN_L PIN_A PIN_F PIN_S <<<"$ISOLATION_PINS"
     PIN_SOURCE="ISOLATION_PINS override"
   else
-    IFS=' ' read -r PIN_N PIN_C PIN_L PIN_A PIN_F PIN_S <<<"3 3 0 0 9 5"
+    IFS=' ' read -r PIN_N PIN_C PIN_L PIN_A PIN_F PIN_S <<<"4 4 0 0 9 7"
     PIN_SOURCE="default"
   fi
   TEST_TMPDIR=$(mktemp -d -p "${BATS_TEST_TMPDIR:?BATS_TEST_TMPDIR unset}")

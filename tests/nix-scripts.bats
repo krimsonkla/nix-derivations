@@ -34,8 +34,8 @@ teardown() { rm -rf "$TEST_TMPDIR"; }
 @test "nix-scripts: count pin" {
   # Bump when a package or an isolation fixture is added or removed. It is the
   # half that makes a silently shrunken enumeration red.
-  [ "$(list_package_expressions | grep -c .)" -eq 14 ]
-  [ "$(list_package_scripts | grep -c .)" -eq 15 ]
+  [ "$(list_package_expressions | grep -c .)" -eq 15 ]
+  [ "$(list_package_scripts | grep -c .)" -eq 16 ]
 }
 
 @test "nix-scripts: every externalized script is tracked and executable-shaped" {
