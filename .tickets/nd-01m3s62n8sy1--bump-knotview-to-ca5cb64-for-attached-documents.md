@@ -6,7 +6,7 @@ type: task
 priority: 2
 mode: hitl
 created: '2026-09-30T12:54:20.184896Z'
-updated: '2026-09-30T12:54:20.422942Z'
+updated: '2026-10-01T18:29:39.344408Z'
 assignee: ''
 ---
 
@@ -47,3 +47,13 @@ this build does not read.
   in what consumers get.
 - The package README's pinned rev line names the new sha.
 - bats tests/ and nix flake check pass sandboxed.
+
+## Notes
+
+**2026-10-01T18:29:39.344408Z**
+
+The pin moved on while #17 was in review: from ca5cb64 to e0bb54bd85ee74da956b873eea8beda3e9b7785e, knotview's main on 2026-10-01, in commit 1662242. The title still names ca5cb64; the PR title names the final pin.
+
+The four further commits order a ticket's children by status and hide the closed ones with ?children=live, and bump uvicorn, pylint and a CI action. pyproject.toml is byte-identical across them, so version stays 0.1.0.
+
+Verified at 1662242: the sandboxed build's import, version and isolation checks; an end-to-end panel run on the new build (an epic's 7 closed children all shown by default and all hidden by ?children=live, documents still rendering); 34/34 bats; and a sandboxed nix flake check.
