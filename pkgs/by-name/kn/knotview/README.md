@@ -6,7 +6,7 @@ https://github.com/krimsonkla/knotview (MIT)
 
 ## Pinned rev
 
-b765e2cb449d36063a0403a483e0004611f53b9b (no tag; version 0.1.0 from
+e0bb54bd85ee74da956b873eea8beda3e9b7785e (no tag; version 0.1.0 from
 `pyproject.toml`)
 
 ## Why here, not nixpkgs
