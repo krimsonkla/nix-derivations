@@ -1,12 +1,13 @@
 ---
 id: nd-01m4nx2akj2x
 title: Bump knotview to 86384bf (1.0.0) for worktree switching and the Primer redesign
-status: in_progress
+status: closed
 type: task
 priority: 2
 mode: hitl
 created: '2026-10-11T16:34:50.609214Z'
-updated: '2026-10-11T16:35:45.398274Z'
+updated: '2026-10-11T16:54:49.207474Z'
+closed: '2026-10-11T16:54:49.207474Z'
 assignee: Jason Risch
 ---
 
@@ -53,3 +54,13 @@ the consumer's knot.
 - The package README's pinned rev line names the new sha, and it says git is taken from
   the consumer's PATH and is optional.
 - bats tests/ and nix flake check pass sandboxed.
+
+## Notes
+
+**2026-10-11T16:54:48.593141Z**
+
+Done at 86384bf with version 1.0.0 and hash sha256-ajZo00LxI0dzg7zRKFtcxAEkp02Y7qtqgT+/VstxcDc=.
+
+Verification turned up a reproducibility bug that also exists on main at 3c6e6ab: `nix build .#knotview --rebuild` gave a different output each time. The install check imports every module from $out, which leaves __pycache__/*.pyc files there, and each one records a build-time mtime. install-check.sh now removes them after the checks. Nothing is lost at run time, because the store resets mtimes and python would treat every one as stale.
+
+Verified: two sandboxed builds now match; bats 34/34; a sandboxed nix flake check passes; the panel serves primer.css; a second git worktree appears in the header select; with no git on PATH, the panel still answers 200.

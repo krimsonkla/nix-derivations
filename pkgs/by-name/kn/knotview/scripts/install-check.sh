@@ -2,7 +2,7 @@
 # knotview install check. Four moves: every module imports, the packaged
 # version matches what upstream says it is, the declared command answers under
 # an empty environment, and its answers are byte-identical from a hostile
-# directory and environment.
+# directory and environment. Then it removes the bytecode those runs left.
 #
 # Sourced by installCheckPhase, never executed: it needs the build shell's
 # runHook and the variables the derivation exports.
@@ -70,5 +70,12 @@ hr=$(cd "$h" && "${clean[@]}" "${hostile[@]}" knotview nosuchproject 2>&1 || tru
   || { echo "output changed under a hostile cwd or environment"; exit 1; }
 if grep -q HIJACKED <<<"$hh$hr"; then echo "hijack marker in output"; exit 1; fi
 echo "isolation: 2 vectors unchanged under a hostile cwd and environment"
+
+# Every python run above imported from $out and left bytecode beside the
+# source. Each .pyc records the source's build-time mtime, so two builds of
+# the same inputs differ, and the store resets those mtimes anyway, so python
+# would find every one stale. Removing them makes the output reproducible and
+# costs nothing at run time.
+find "$out" -type d -name __pycache__ -prune -exec rm -rf {} +
 
 runHook postInstallCheck
