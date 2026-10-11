@@ -18,9 +18,10 @@ cp -r src/knotview "$out/lib/knotview/"
 cp "$launcher" "$out/lib/knotview/main.py"
 
 # PATH is deliberately not set: knotview runs `knot`, which the consumer's
-# tickets layer supplies, and a private PATH here would hide it. Every
-# variable this python honours is unset by the scrub, so what the consumer's
-# shell exports cannot reach the interpreter.
+# tickets layer supplies, and optionally `git`, which the consumer's shell
+# supplies. A private PATH here would hide both. Every variable this python
+# honours is unset by the scrub, so what the consumer's shell exports cannot
+# reach the interpreter.
 # shellcheck source=/dev/null # a store path, resolved at build time
 source "$isolationWrapper"
 wrap_isolated \

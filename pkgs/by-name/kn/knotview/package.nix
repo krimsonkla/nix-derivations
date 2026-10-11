@@ -17,12 +17,12 @@
 in
   stdenvNoCC.mkDerivation {
     pname = "knotview";
-    version = "0.1.0";
+    version = "1.0.0";
     src = fetchFromGitHub {
       owner = "krimsonkla";
       repo = "knotview";
-      rev = "e0bb54bd85ee74da956b873eea8beda3e9b7785e";
-      hash = "sha256-f/DfFlsbq1aob08EewcRJMR9mlnEIgNk4Q3zDH62GLM=";
+      rev = "86384bf30107773e75a5d27d6020f48dec836943";
+      hash = "sha256-ajZo00LxI0dzg7zRKFtcxAEkp02Y7qtqgT+/VstxcDc=";
     };
     patches = [];
     nativeBuildInputs = [makeWrapper];

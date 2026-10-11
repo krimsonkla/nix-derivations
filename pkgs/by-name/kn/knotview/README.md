@@ -6,7 +6,7 @@ https://github.com/krimsonkla/knotview (MIT)
 
 ## Pinned rev
 
-e0bb54bd85ee74da956b873eea8beda3e9b7785e (no tag; version 0.1.0 from
+86384bf30107773e75a5d27d6020f48dec836943 (no tag; version 1.0.0 from
 `pyproject.toml`)
 
 ## Why here, not nixpkgs
@@ -28,6 +28,11 @@ command and takes `--knot` for an unusual installation, so the tickets layer
 supplies it on PATH; that is also why this wrapper sets no PATH of its own,
 only the scrub. What a consumer gets is a panel that finds their knot, not a
 second copy of it.
+
+`git` comes from the consumer's PATH the same way. knotview runs
+`git worktree list` to offer the repository's worktrees in a dropdown in the
+panel header, which needs git 2.36 or later. When git is missing or too old,
+the panel shows only the directory it was started in, so git is optional.
 
 Limits: the import check catches a dependency a module requires at import
 time, not one reached inside a function. The upstream version is read from
