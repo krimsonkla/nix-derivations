@@ -30,14 +30,19 @@ teardown() {
 # directly, never inside $(...): a background child holding the substitution's
 # stdout would keep it open, and the caller would wait forever.
 start_stub() {
-  local status="$1" compare="${2:-}" portfile="$TEST_TMPDIR/port"
+  local status="$1" compare="${2:-}" headers="${3:-}" portfile="$TEST_TMPDIR/port"
   python3 -c '
 import http.server, sys
-status, compare, portfile = int(sys.argv[1]), sys.argv[2], sys.argv[3]
+status, compare, headers, portfile = int(sys.argv[1]), sys.argv[2], sys.argv[3], sys.argv[4]
+hits = portfile + ".hits"
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
+        open(hits, "a").write("hit\n")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        for h in filter(None, headers.split(";")):
+            k, v = h.split(":", 1)
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(("{\"status\": \"%s\"}" % compare).encode())
     def log_message(self, *a):
@@ -45,7 +50,7 @@ class H(http.server.BaseHTTPRequestHandler):
 srv = http.server.HTTPServer(("127.0.0.1", 0), H)
 open(portfile, "w").write(str(srv.server_address[1]))
 srv.serve_forever()
-' "$status" "$compare" "$portfile" </dev/null >/dev/null 2>&1 &
+' "$status" "$compare" "$headers" "$portfile" </dev/null >/dev/null 2>&1 &
   STUB_PID=$!
   local tries=50
   while [[ ! -s "$portfile" ]] && ((tries-- > 0)); do
@@ -121,7 +126,7 @@ srv.serve_forever()
 }
 
 @test "consumer-nixpkgs: red -- an API answering 403 fails provenance closed" {
-  start_stub 403
+  start_stub 403 "" ""
   run --separate-stderr env CONSUMER_NIXPKGS_API="$STUB_URL" CONSUMER_NIXPKGS_RETRIES=1 \
     python3 "$SCRIPT" provenance "$LIST"
   echo "$stderr"
@@ -160,4 +165,22 @@ srv.serve_forever()
   [ "$status" -eq 1 ]
   [ -z "$output" ]
   [[ "$stderr" == *"rolling=ahead"* ]]
+}
+
+@test "consumer-nixpkgs: a rate-limited 403 is retried, then fails closed" {
+  start_stub 403 "" "Retry-After:0"
+  run --separate-stderr env CONSUMER_NIXPKGS_API="$STUB_URL" CONSUMER_NIXPKGS_RETRIES=2 \
+    python3 "$SCRIPT" provenance "$LIST"
+  echo "$stderr"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [ "$(grep -c hit "$TEST_TMPDIR/port.hits")" -eq 2 ]
+}
+
+@test "consumer-nixpkgs: a plain 403 is not retried" {
+  start_stub 403 "" ""
+  run --separate-stderr env CONSUMER_NIXPKGS_API="$STUB_URL" CONSUMER_NIXPKGS_RETRIES=3 \
+    python3 "$SCRIPT" provenance "$LIST"
+  [ "$status" -eq 1 ]
+  [ "$(grep -c hit "$TEST_TMPDIR/port.hits")" -eq 1 ]
 }

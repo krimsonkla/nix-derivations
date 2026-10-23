@@ -56,7 +56,10 @@ when the consumer's nixpkgs is listed in `consumer-nixpkgs.txt`.
 - `scripts/consumer-nixpkgs.py` checks every line before any workflow uses it.
   The owner and repository must be `cachix/devenv-nixpkgs` or `NixOS/nixpkgs`.
   The rev must be reachable from that repository's upstream branch, because
-  GitHub serves a fork's commit through the parent's path.
+  GitHub serves a fork's commit through the parent's path. Only revs reachable
+  from `rolling` (devenv-nixpkgs) or from `nixos-unstable` or `master`
+  (nixpkgs) register: a release-branch rev such as one from `nixos-25.05` is
+  a cherry-pick, not an ancestor of those branches, so it fails provenance.
 - Cost: each listed line adds 4 package builds on each of the 2 systems to
   every publish, and the same again to every pull-request check. Most of these
   are cache hits after the first publish.
