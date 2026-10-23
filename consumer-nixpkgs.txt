@@ -1,0 +1,10 @@
+# Consumer nixpkgs revisions. The publish workflow builds and caches every
+# package against each nixpkgs listed here, so a consumer that sets
+# `inputs.nixpkgs.follows` substitutes instead of compiling.
+#
+# One line per consumer: `<label> github:<owner>/<repo>/<40-char rev>`.
+# A consumer's bump replaces its own line; it never appends a second one.
+# Labels are neutral names, not repository names. The owner/repo allowlist and
+# the upstream branches a rev must be reachable from live in
+# scripts/consumer-nixpkgs.py, which every workflow reads this file through.
+layers github:cachix/devenv-nixpkgs/760b85220489f69855e6df78a6d1dad5873f8bf6
