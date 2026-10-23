@@ -1,12 +1,13 @@
 ---
 id: nd-01m5k4f6c5fa
 title: Publish cache builds for each registered consumer nixpkgs, so follows consumers substitute instead of compiling
-status: open
+status: closed
 type: task
 priority: 2
 mode: hitl
 created: '2026-10-23T01:02:10.820063Z'
-updated: '2026-10-23T01:02:10.917698Z'
+updated: '2026-10-23T02:48:29.455821Z'
+closed: '2026-10-23T02:48:29.455821Z'
 assignee: ''
 ---
 
@@ -21,3 +22,13 @@ Register each consumer's nixpkgs in `consumer-nixpkgs.txt` (one line per consume
 - `consumer-nixpkgs.txt` lists `layers github:cachix/devenv-nixpkgs/760b85220489f69855e6df78a6d1dad5873f8bf6`, validated by `scripts/consumer-nixpkgs.py` and the `consumer-nixpkgs` bats guard (count pinned, red checks).
 - `publish.yml` builds and substitute-proves all packages per registered ref on both systems; `check.yml` builds them on PRs, secret-free.
 - A rev not reachable from its upstream branch, or an API failure, fails before any build.
+
+## Notes
+
+**2026-10-23T02:48:23.993075Z**
+
+Reverted at the developer's request: #20 (1ad161ff) and #21 (7cd10fff) are undone by this commit. The developer will publish the new knot version in this repository instead. Closed without the change.
+
+**2026-10-23T02:48:29.455821Z**
+
+Reverted at the developer's request; the new knot version will be published here instead.

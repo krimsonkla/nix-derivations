@@ -44,37 +44,6 @@ This cache is dedicated to this repository and is **in addition to** any cache
 a consumer already uses. A consumer therefore adds a second substituter and
 public key; nothing here replaces the first.
 
-### Registering a consumer nixpkgs
-
-A consumer that sets `inputs.nixpkgs.follows` evaluates every package with its
-own nixpkgs, so it asks the cache for store paths that differ from the ones
-built with this repository's own `flake.lock`. Those paths are in the cache only
-when the consumer's nixpkgs is listed in `consumer-nixpkgs.txt`.
-
-- The list has one line per consumer: `<label> github:<owner>/<repo>/<40-char rev>`.
-  A consumer's bump replaces its own line; it never adds a second one.
-- `scripts/consumer-nixpkgs.py` checks every line before any workflow uses it.
-  The owner and repository must be `cachix/devenv-nixpkgs` or `NixOS/nixpkgs`.
-  The rev must be reachable from that repository's upstream branch, because
-  GitHub serves a fork's commit through the parent's path. Only revs reachable
-  from `rolling` (devenv-nixpkgs) or from `nixos-unstable` or `master`
-  (nixpkgs) register: a release-branch rev such as one from `nixos-25.05` is
-  a cherry-pick, not an ancestor of those branches, so it fails provenance.
-- Cost: each listed line adds 4 package builds on each of the 2 systems to
-  every publish, and the same again to every pull-request check. Most of these
-  are cache hits after the first publish.
-
-To register or move a consumer's nixpkgs:
-
-1. Open a pull request that adds or replaces the consumer's line.
-2. Wait for `check.yml`'s `consumer-nixpkgs` job to pass on both systems.
-   Reviewers confirm that its provenance step passed.
-3. Merge, and wait for `publish.yml` to pass, including `substitute-only`. A
-   provenance failure on publish is re-run, never bypassed.
-4. Confirm that `https://krimsonkla-nixpkgs.cachix.org/<hash>.narinfo` returns
-   200 for each package under the consumer's nixpkgs.
-5. Only then bump the consumer's `nix-derivations` pin to the merge commit.
-
 ### Who can write to the cache
 
 The cache `krimsonkla-nixpkgs` exists for this repository alone. Its only
@@ -141,14 +110,9 @@ Three GitHub Actions workflows:
   The three required status checks, named once here and configured in branch
   protection, are `check (ubuntu-latest)`, `check (macos-latest)` and
   `registry-diff`. A flaky darwin run is retried, never made advisory.
-- `check.yml` also runs `consumer-nixpkgs` on both systems: it validates
-  `consumer-nixpkgs.txt`, checks each rev comes from upstream, and builds every
-  package against each listed nixpkgs. It is not yet a required status check.
 - `publish.yml` on merge to the default branch: build every package on both
-  systems, with this repository's nixpkgs and with each listed consumer
-  nixpkgs, push to the cache with a write token minted for this repository
-  alone, then `substitute-only` proves a tokenless consumer substitutes both
-  sets.
+  systems, push to the cache with a write token minted for this repository
+  alone, then `substitute-only` proves a tokenless consumer substitutes.
 - `full-registry.yml` weekly, on manual dispatch, and on merges touching
   `pkgs/` or `tests/`: re-fetches every registry row with substitution
   disabled.
@@ -160,11 +124,9 @@ deck.
 ## Residual risks
 
 - The repository's own `flake.lock` on `devenv-nixpkgs/rolling` is a build-time
-  convenience. A consumer that `follows` its own nixpkgs gets cache hits and a
-  green check only for a nixpkgs listed in `consumer-nixpkgs.txt`; with any
-  other nixpkgs it builds from source and has no guarantee from this
-  repository. A consumer that wants the guarantee pins both revisions as a
-  pair and registers its nixpkgs.
+  convenience. A consumer that `follows` its own nixpkgs gets no guarantee from
+  this repository's green check; a consumer that wants one pins both revisions
+  on its own side.
 - Conventions 4, 7 and 8 in `CONTRIBUTING.md` are written-only; nothing
   enforces them.
 - The lockfile half of the hash registry guard carries one row, glci's
