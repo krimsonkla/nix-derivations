@@ -20,7 +20,7 @@ labels, and an owner/repo on ALLOWED. provenance runs validate, then asks the
 GitHub compare API whether each rev is reachable from one of its repository's
 upstream branches. GitHub serves a fork's commit through the parent's path, so
 the allowlist alone does not prove where a rev came from. A network error or a
-5xx/429 answer is retried; anything else that is not a definite "reachable"
+5xx/429 answer, or a 403 that GitHub marks as rate limiting, is retried; anything else that is not a definite "reachable"
 fails. CONSUMER_NIXPKGS_API overrides the API base, CONSUMER_NIXPKGS_RETRIES
 the attempt count, and GITHUB_TOKEN, when set, authenticates the calls to
 https://api.github.com (and only there).
@@ -47,6 +47,7 @@ LABEL_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 REF_RE = re.compile(r"^github:([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+)/([0-9a-f]{40})$")
 REACHABLE = ("behind", "identical")
 TRANSIENT = (429, 500, 502, 503, 504)
+RATE_LIMIT_CAP = 60
 
 
 class ListError(Exception):
@@ -86,6 +87,31 @@ def parse(path):
     return entries
 
 
+def rate_limit_wait(exc):
+    """Seconds to wait when a 403 or 429 is GitHub rate limiting, else None.
+
+    GitHub answers a primary or secondary rate limit with 403 (or 429) plus
+    Retry-After or x-ratelimit-remaining: 0. That is transient; any other 403
+    is a refusal and fails at once. The wait is capped so a long reset fails
+    the run instead of holding a runner.
+    """
+    if exc.code not in (403, 429):
+        return None
+    headers = exc.headers or {}
+    retry_after = headers.get("Retry-After")
+    if retry_after is not None:
+        try:
+            return min(max(int(retry_after), 0), RATE_LIMIT_CAP)
+        except ValueError:
+            return RATE_LIMIT_CAP
+    if headers.get("x-ratelimit-remaining") == "0":
+        try:
+            return min(max(int(headers.get("x-ratelimit-reset", "0")) - int(time.time()), 0), RATE_LIMIT_CAP)
+        except ValueError:
+            return RATE_LIMIT_CAP
+    return None
+
+
 def compare(api, owner_repo, branch, rev, token, attempts):
     """Return the compare status string, or raise ListError after the last attempt."""
     url = f"{api}/repos/{owner_repo}/compare/{branch}...{rev}"
@@ -101,8 +127,12 @@ def compare(api, owner_repo, branch, rev, token, attempts):
             last = f"HTTP {exc.code}"
             if exc.code == 404:
                 return "absent"
-            if exc.code not in TRANSIENT:
+            wait = rate_limit_wait(exc)
+            if exc.code not in TRANSIENT and wait is None:
                 break
+            if attempt < attempts:
+                time.sleep(wait if wait is not None else 2**attempt)
+            continue
         except (urllib.error.URLError, OSError, ValueError) as exc:
             last = f"network error: {getattr(exc, 'reason', exc)}"
         if attempt < attempts:
