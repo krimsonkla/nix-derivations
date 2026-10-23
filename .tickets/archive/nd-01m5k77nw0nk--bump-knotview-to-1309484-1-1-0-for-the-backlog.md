@@ -1,12 +1,13 @@
 ---
 id: nd-01m5k77nw0nk
 title: Bump knotview to c5d8ff4 (1.2.0) for the leverage-ordered ready queue, progress by tag and worktree compare
-status: in_progress
+status: closed
 type: task
 priority: 2
 mode: hitl
 created: '2026-10-23T01:50:30.272647Z'
-updated: '2026-10-23T02:49:57.349477Z'
+updated: '2026-10-23T02:57:46.296116Z'
+closed: '2026-10-23T02:57:46.296116Z'
 assignee: Jason Risch
 ---
 
