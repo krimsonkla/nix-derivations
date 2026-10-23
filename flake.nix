@@ -151,9 +151,6 @@
         named-labels = guard "named-labels" {};
         inventory = guard "inventory" {};
         nix-scripts = guard "nix-scripts" {};
-        # The provenance reds talk to a loopback stub, which the darwin sandbox
-        # forbids unless the derivation asks for local networking.
-        consumer-nixpkgs = guard "consumer-nixpkgs" {__darwinAllowLocalNetworking = true;};
         isolation = guard "isolation" {
           ISOLATION_MANIFEST = builtins.toJSON v.manifest;
           FAMILIES = builtins.toJSON isolation.families;
