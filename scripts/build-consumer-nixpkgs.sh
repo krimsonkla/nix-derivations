@@ -4,8 +4,9 @@
 # `scripts/consumer-nixpkgs.py provenance consumer-nixpkgs.txt`: callers never
 # hand this script the raw list, so every value here passed the allowlist and
 # the upstream check first. Packages are built for the current system only.
+# The macOS runners' /bin/bash is 3.2: no mapfile and no inherit_errexit, so
+# every command substitution below is checked explicitly.
 set -euo pipefail
-shopt -s inherit_errexit
 IFS=$'\n\t'
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 readonly SCRIPT_NAME
@@ -29,14 +30,19 @@ fi
 refs="$1"
 [[ -s "$refs" ]] || fail "refs file '$refs' is missing or empty; run consumer-nixpkgs.py provenance first"
 
-system=$(nix eval --raw --impure --expr builtins.currentSystem)
+system=$(nix eval --raw --impure --expr builtins.currentSystem) || fail "cannot evaluate the current system"
 count=0
 while IFS=' ' read -r label ref; do
   [[ -n "$label" ]] || continue
   [[ "$ref" =~ ^github:[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/[0-9a-f]{40}$ ]] || fail "$label: ref '$ref' is not a validated flake ref"
   override=(--override-input nixpkgs "$ref")
-  mapfile -t attrs < <(nix eval --raw "${override[@]}" ".#packages.$system" \
-    --apply 'ps: builtins.concatStringsSep "\n" (map (n: ".#" + n) (builtins.attrNames ps))')
+  names=$(nix eval --raw "${override[@]}" ".#packages.$system" \
+    --apply 'ps: builtins.concatStringsSep "\n" (map (n: ".#" + n) (builtins.attrNames ps))') ||
+    fail "$label: cannot list packages under $ref"
+  attrs=()
+  while IFS= read -r a; do
+    [[ -n "$a" ]] && attrs+=("$a")
+  done <<<"$names"
   [[ ${#attrs[@]} -gt 0 ]] || fail "$label: no packages evaluated for $system"
   # Force full instantiation first, as the publish workflow does for its own
   # nixpkgs: devenv-nixpkgs applies its patches at evaluation time, and that
