@@ -22,6 +22,31 @@ jobs:
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk=
       - run: nix config show | grep -E '^sandbox = true$'
       - run: nix flake check -L
+  consumer-nixpkgs:
+    # Builds every package against each registered consumer nixpkgs, so a
+    # nixpkgs that breaks a package fails here, before merge. No environment
+    # and no secrets: the provenance call authenticates with the workflow's
+    # own read-only token.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          extra_nix_config: |
+            sandbox = true
+            substituters = https://cache.nixos.org https://krimsonkla-nixpkgs.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= krimsonkla-nixpkgs.cachix.org-1:9WHsyDVPF07aDDPjysKKmovp4LxPztFlSPV2Vj0lZgk=
+      - name: Validate the list and check each rev comes from upstream
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/consumer-nixpkgs.py provenance consumer-nixpkgs.txt > "$RUNNER_TEMP/consumer-refs"
+      - name: Build every package per consumer nixpkgs
+        run: bash scripts/build-consumer-nixpkgs.sh "$RUNNER_TEMP/consumer-refs"
   registry-diff:
     runs-on: ubuntu-latest
     steps:
