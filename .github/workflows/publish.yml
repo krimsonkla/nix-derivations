@@ -30,6 +30,16 @@ jobs:
           attrs=$(nix eval --raw ".#packages.$system" --apply 'ps: builtins.concatStringsSep " " (map (n: ".#" + n) (builtins.attrNames ps))')
           # shellcheck disable=SC2086
           nix build --print-build-logs $attrs
+      # The same packages built against each registered consumer nixpkgs, so a
+      # consumer that follows its own nixpkgs finds them in the cache. The
+      # cachix-action push hook uploads them like the builds above. A
+      # provenance failure here is re-run, never bypassed.
+      - name: Validate the consumer list and check each rev comes from upstream
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/consumer-nixpkgs.py provenance consumer-nixpkgs.txt > "$RUNNER_TEMP/consumer-refs"
+      - name: Build every package per consumer nixpkgs
+        run: bash scripts/build-consumer-nixpkgs.sh "$RUNNER_TEMP/consumer-refs"
   substitute-only:
     needs: build
     strategy:
@@ -72,3 +82,9 @@ jobs:
           echo
           # shellcheck disable=SC2086
           nix build --max-jobs 0 --print-build-logs $attrs
+      - name: Validate the consumer list and check each rev comes from upstream
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/consumer-nixpkgs.py provenance consumer-nixpkgs.txt > "$RUNNER_TEMP/consumer-refs"
+      - name: Substitute every package per consumer nixpkgs with local builds forbidden
+        run: bash scripts/build-consumer-nixpkgs.sh --substitute-only "$RUNNER_TEMP/consumer-refs"
