@@ -23,28 +23,29 @@ teardown() {
   rm -rf "$TEST_TMPDIR"
 }
 
-# Starts a loopback HTTP server answering every GET with the given status and
-# sets STUB_URL to its base URL. Port 0 lets the kernel pick a free port; the
+# Starts a loopback HTTP server answering every GET with the given HTTP status
+# and a JSON body {"status": <compare status>}, and sets STUB_URL to its base
+# URL. Port 0 lets the kernel pick a free port; the
 # server writes the port it got to a file the helper waits for. Called
 # directly, never inside $(...): a background child holding the substitution's
 # stdout would keep it open, and the caller would wait forever.
 start_stub() {
-  local status="$1" portfile="$TEST_TMPDIR/port"
+  local status="$1" compare="${2:-}" portfile="$TEST_TMPDIR/port"
   python3 -c '
 import http.server, sys
-status, portfile = int(sys.argv[1]), sys.argv[2]
+status, compare, portfile = int(sys.argv[1]), sys.argv[2], sys.argv[3]
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
-        self.wfile.write(b"{}")
+        self.wfile.write(("{\"status\": \"%s\"}" % compare).encode())
     def log_message(self, *a):
         pass
 srv = http.server.HTTPServer(("127.0.0.1", 0), H)
 open(portfile, "w").write(str(srv.server_address[1]))
 srv.serve_forever()
-' "$status" "$portfile" </dev/null >/dev/null 2>&1 &
+' "$status" "$compare" "$portfile" </dev/null >/dev/null 2>&1 &
   STUB_PID=$!
   local tries=50
   while [[ ! -s "$portfile" ]] && ((tries-- > 0)); do
@@ -127,4 +128,36 @@ srv.serve_forever()
   [ "$status" -eq 1 ]
   [ -z "$output" ]
   [[ "$stderr" == *"403"* ]]
+}
+
+# The reachability rule itself: only behind or identical passes. A fork commit
+# reads as diverged and a commit past the branch tip as ahead; both must fail,
+# or a looser rule would pass every network-failure red above.
+@test "consumer-nixpkgs: provenance accepts a rev the branch is behind" {
+  start_stub 200 behind
+  run --separate-stderr env CONSUMER_NIXPKGS_API="$STUB_URL" CONSUMER_NIXPKGS_RETRIES=1 \
+    python3 "$SCRIPT" provenance "$LIST"
+  echo "$stderr"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"layers $GOOD_REF"* ]]
+}
+
+@test "consumer-nixpkgs: red -- a diverged rev fails provenance" {
+  start_stub 200 diverged
+  run --separate-stderr env CONSUMER_NIXPKGS_API="$STUB_URL" CONSUMER_NIXPKGS_RETRIES=1 \
+    python3 "$SCRIPT" provenance "$LIST"
+  echo "$stderr"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"rolling=diverged"* ]]
+}
+
+@test "consumer-nixpkgs: red -- an ahead rev fails provenance" {
+  start_stub 200 ahead
+  run --separate-stderr env CONSUMER_NIXPKGS_API="$STUB_URL" CONSUMER_NIXPKGS_RETRIES=1 \
+    python3 "$SCRIPT" provenance "$LIST"
+  echo "$stderr"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"rolling=ahead"* ]]
 }

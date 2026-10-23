@@ -22,7 +22,8 @@ upstream branches. GitHub serves a fork's commit through the parent's path, so
 the allowlist alone does not prove where a rev came from. A network error or a
 5xx/429 answer is retried; anything else that is not a definite "reachable"
 fails. CONSUMER_NIXPKGS_API overrides the API base, CONSUMER_NIXPKGS_RETRIES
-the attempt count, and GITHUB_TOKEN, when set, authenticates the calls.
+the attempt count, and GITHUB_TOKEN, when set, authenticates the calls to
+https://api.github.com (and only there).
 """
 
 import json
@@ -111,7 +112,9 @@ def compare(api, owner_repo, branch, rev, token, attempts):
 
 def provenance(entries, path):
     api = os.environ.get("CONSUMER_NIXPKGS_API", "https://api.github.com").rstrip("/")
-    token = os.environ.get("GITHUB_TOKEN", "")
+    # The token goes only to GitHub itself: an overridden API base (the test
+    # stubs) never receives it.
+    token = os.environ.get("GITHUB_TOKEN", "") if api == "https://api.github.com" else ""
     try:
         attempts = max(1, int(os.environ.get("CONSUMER_NIXPKGS_RETRIES", "3")))
     except ValueError:
