@@ -1,12 +1,13 @@
 ---
 id: nd-01m5nx68t22y
 title: Bump knotview to 91f905d (1.3.0) for related tickets in full and status coloured by role
-status: in_progress
+status: closed
 type: task
 priority: 2
 mode: hitl
 created: '2026-10-24T02:52:41.666411Z'
-updated: '2026-10-24T02:53:04.351789Z'
+updated: '2026-10-24T03:00:47.905629Z'
+closed: '2026-10-24T03:00:47.905629Z'
 assignee: Jason Risch
 ---
 
