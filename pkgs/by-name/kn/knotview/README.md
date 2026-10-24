@@ -6,7 +6,7 @@ https://github.com/krimsonkla/knotview (MIT)
 
 ## Pinned rev
 
-86384bf30107773e75a5d27d6020f48dec836943 (no tag; version 1.0.0 from
+c5d8ff48dbdc2959574a4ae025f8ee7050a87ebf (no tag; version 1.2.0 from
 `pyproject.toml`)
 
 ## Why here, not nixpkgs
@@ -27,7 +27,8 @@ wide and the pin that matters is the consumer's nixpkgs rev.
 command and takes `--knot` for an unusual installation, so the tickets layer
 supplies it on PATH; that is also why this wrapper sets no PATH of its own,
 only the scrub. What a consumer gets is a panel that finds their knot, not a
-second copy of it.
+second copy of it. That knot must be 0.15.0 or later, the version that added
+the documents knotview shows; the `knot` this repository ships meets it.
 
 `git` comes from the consumer's PATH the same way. knotview runs
 `git worktree list` to offer the repository's worktrees in a dropdown in the
